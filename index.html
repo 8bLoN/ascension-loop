@@ -2372,183 +2372,254 @@ function gameLoop(timestamp) {
 
 // --- Hero SVG definitions per stage ---
 function getHeroSVG(stage) {
-  // Reads G.weapons to show visual gear upgrades.
   const sw = (G.weapons && G.weapons.sword)  || 0;
   const ar = (G.weapons && G.weapons.armor)  || 0;
+  const bo = (G.weapons && G.weapons.bow)    || 0;
+  const st = (G.weapons && G.weapons.staff)  || 0;
   const ru = (G.weapons && G.weapons.rune)   || 0;
 
-  // Gear tiers — 0=none, 1=iron(gray), 2=darkened, 3=blackened, 4=runic(glows)
-  const wTier = ru>=1 ? 4 : sw>=5 ? 3 : sw>=3 ? 2 : sw>=1 ? 1 : 0;  // weapon
-  const bTier = ru>=1 ? 4 : ar>=4 ? 3 : ar>=2 ? 2 : ar>=1 ? 1 : 0;  // body
-  const hTier = ru>=1 ? 4 : ar>=4 ? 3 : ar>=2 ? 2 : sw>=2 ? 1 : 0;  // helmet
-  const lTier = ar>=3 ? 2 : ar>=1 ? 1 : 0;                            // legs
+  // Tier changes every 5 purchased. auto-attack has no visual effect.
+  const wTier  = Math.min(4, Math.floor(sw / 5)); // sword tier 0-4
+  const arTier = Math.min(4, Math.floor(ar / 5)); // armor tier 0-4
+  const bwTier = Math.min(3, Math.floor(bo / 5)); // quiver tier 0-3
+  const stTier = Math.min(3, Math.floor(st / 5)); // book/orb tier 0-3
+  const ruTier = Math.min(3, Math.floor(ru / 5)); // amulet tier 0-3
+  const lTier  = Math.min(2, Math.floor(ar / 5)); // legs follow armor
+  const hTier  = arTier;                          // helmet follows armor
 
   // Stage accent color
-  const hues = [0,205,280,28,175,50,290];
-  const hue  = hues[stage-1] ?? 205;
-  const sc   = `hsl(${hue},70%,58%)`;
-  const sm   = `hsl(${hue},50%,35%)`;
-  const sd   = `hsl(${hue},30%,18%)`;
-  const skin = stage<=2 ? '#c8a070' : stage<=4 ? '#b09050' : stage<=6 ? '#88b0c8' : '#c0c8ff';
+  const hues = [0, 205, 280, 28, 175, 50, 290];
+  const hue  = hues[stage - 1] ?? 205;
+  const sc   = 'hsl(' + hue + ',70%,58%)';
+  const sm   = 'hsl(' + hue + ',50%,35%)';
+  const sd   = 'hsl(' + hue + ',30%,18%)';
+  const skin = stage <= 2 ? '#c8a070' : stage <= 4 ? '#b09050' : stage <= 6 ? '#88b0c8' : '#c0c8ff';
 
   let s = '<defs>';
-  s += `<radialGradient id="halo" cx="50%" cy="55%" r="55%"><stop offset="0%" stop-color="${sm}" stop-opacity="0.45"/><stop offset="100%" stop-color="${sd}" stop-opacity="0"/></radialGradient>`;
-  if (wTier===3) s += '<filter id="wg"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  s += '<radialGradient id="halo" cx="50%" cy="55%" r="55%"><stop offset="0%" stop-color="' + sm + '" stop-opacity="0.45"/><stop offset="100%" stop-color="' + sd + '" stop-opacity="0"/></radialGradient>';
+  if (wTier >= 3 || stTier >= 3 || ruTier >= 3)
+    s += '<filter id="wg"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
   s += '</defs>';
   s += '<rect width="70" height="130" fill="url(#halo)"/>';
 
-  // ── BOOTS / LEGS — 3 tiers ────────────────────────────────────────────────
-  const legCols = [
-    ['#4e3218','#322010','#261608'],   // 0: cloth
-    ['#707e8c','#3e4c58','#303e4a'],   // 1: greaves
-    ['#303840','#1c2430','#141c24'],   // 2: dark plate
-  ];
-  const [lc,ld,bc] = legCols[lTier] || legCols[0];
-  s += `<rect x="25" y="91" width="9" height="29" rx="2" fill="${lc}"/>`;
-  s += `<rect x="36" y="91" width="9" height="29" rx="2" fill="${ld}"/>`;
-  if (lTier>=1) {
-    s += `<rect x="25" y="101" width="9" height="3" rx="1" fill="${ld}"/>`;
-    s += `<rect x="36" y="101" width="9" height="3" rx="1" fill="${bc}"/>`;
+  // ── QUIVER (bow) ── drawn BEFORE body so it appears behind ────────────────
+  if (bwTier >= 1) {
+    const qb = ['#6b3a18','#3a2210','#1a1428'][bwTier - 1];
+    const qt = ['#7d4828','#4a2e18','#2a2040'][bwTier - 1];
+    const qs = ['#553010','#8a6030','#8060c0'][bwTier - 1];
+    const qa = ['#8a6030','#c8a050','#60a0ff'][bwTier - 1];
+    // Quiver body behind left arm
+    s += '<rect x="3" y="62" width="10" height="34" rx="3.5" fill="' + qb + '"/>';
+    s += '<ellipse cx="8" cy="63" rx="5" ry="2.5" fill="' + qt + '"/>';
+    // Shoulder strap
+    s += '<line x1="8" y1="62" x2="21" y2="59" stroke="' + qs + '" stroke-width="1.8"/>';
+    // Arrows
+    const nArr = bwTier >= 2 ? 3 : 2;
+    for (let i = 0; i < nArr; i++) {
+      const ax = 5 + i * 2.5;
+      const ay = 55 - i * 2;
+      s += '<line x1="' + ax + '" y1="' + ay + '" x2="' + (ax + 0.5) + '" y2="65" stroke="' + qa + '" stroke-width="1"/>';
+      // Fletching
+      s += '<line x1="' + (ax - 1) + '" y1="' + (ay + 3) + '" x2="' + ax + '" y2="' + ay + '" stroke="' + qs + '" stroke-width="1.2"/>';
+      if (bwTier >= 3) // glowing tips
+        s += '<ellipse cx="' + ax + '" cy="' + ay + '" rx="1.8" ry="1" fill="' + sc + '" opacity=".9" filter="url(#wg)"/>';
+    }
+    if (bwTier >= 2) { // metal bands
+      s += '<rect x="3" y="73" width="10" height="2" rx="1" fill="' + qs + '" opacity=".8"/>';
+      s += '<rect x="3" y="82" width="10" height="2" rx="1" fill="' + qs + '" opacity=".8"/>';
+    }
+    if (bwTier >= 3) { // enchanted glow
+      s += '<rect x="3" y="62" width="10" height="34" rx="3.5" fill="' + sc + '" opacity=".1"/>';
+    }
   }
-  s += `<rect x="23" y="117" width="13" height="7" rx="2.5" fill="${bc}"/>`;
-  s += `<rect x="34" y="117" width="13" height="7" rx="2.5" fill="${bc}"/>`;
 
-  // ── BODY ARMOR — 4 color tiers ────────────────────────────────────────────
-  // bc1=main, bc2=highlight, ps=pauldron, lv=line
-  const bodyPalette = [
-    ['#5a3c1e','#6a4828', null, null],           // 0: cloth (no pauldrons)
-    ['#788898','#8898a8', '#788898', '#586878'],  // 1: iron gray chainmail
-    ['#485868','#586878', '#485868', '#384858'],  // 2: dark steel plate
-    ['#202830','#28333e', '#202830', '#181e28'],  // 3: blackened armor
-    [sd,       sm,        sd,        sc],          // 4: runic
+  // ── LEGS ──────────────────────────────────────────────────────────────────
+  const legCols = [
+    ['#4e3218','#322010','#261608'],
+    ['#707e8c','#3e4c58','#303e4a'],
+    ['#303840','#1c2430','#141c24'],
   ];
-  {
-    const [bc1,bc2,ps,lv] = bodyPalette[bTier] || bodyPalette[0];
-    if (bTier===0) {
-      s += `<rect x="21" y="60" width="28" height="33" rx="3" fill="${bc1}"/>`;
-      s += `<rect x="27" y="62" width="16" height="29" fill="${bc2}"/>`;
+  const [lc, ld, lb] = legCols[Math.min(2, lTier)];
+  s += '<rect x="25" y="91" width="9" height="29" rx="2" fill="' + lc + '"/>';
+  s += '<rect x="36" y="91" width="9" height="29" rx="2" fill="' + ld + '"/>';
+  if (lTier >= 1) {
+    s += '<rect x="25" y="101" width="9" height="3" rx="1" fill="' + ld + '"/>';
+    s += '<rect x="36" y="101" width="9" height="3" rx="1" fill="' + lb + '"/>';
+  }
+  s += '<rect x="23" y="117" width="13" height="7" rx="2.5" fill="' + lb + '"/>';
+  s += '<rect x="34" y="117" width="13" height="7" rx="2.5" fill="' + lb + '"/>';
+
+  // ── BODY ARMOR ────────────────────────────────────────────────────────────
+  const bp = [
+    ['#5a3c1e','#6a4828',null,null],
+    ['#788898','#8898a8','#788898','#586878'],
+    ['#485868','#586878','#485868','#384858'],
+    ['#202830','#28333e','#202830','#181e28'],
+    [sd, sm, sd, sc],
+  ];
+  const [bc1, bc2, ps, lv] = bp[arTier] || bp[0];
+  if (arTier === 0) {
+    s += '<rect x="21" y="60" width="28" height="33" rx="3" fill="' + bc1 + '"/>';
+    s += '<rect x="27" y="62" width="16" height="29" fill="' + bc2 + '"/>';
+  } else {
+    s += '<rect x="20" y="59" width="30" height="34" rx="3" fill="' + bc1 + '"/>';
+    s += '<path d="M22 59 L48 59 L45 93 L25 93 Z" fill="' + bc2 + '" opacity=".85"/>';
+    s += '<line x1="35" y1="59" x2="35" y2="93" stroke="' + (lv || bc1) + '" stroke-width="1.3"/>';
+    if (arTier >= 2) {
+      s += '<path d="M10 57 L21 57 L22 73 L11 73 Z" fill="' + bc2 + '" stroke="' + lv + '" stroke-width=".6"/>';
+      s += '<path d="M49 57 L60 57 L59 73 L48 73 Z" fill="' + bc2 + '" stroke="' + lv + '" stroke-width=".6"/>';
+      s += '<rect x="11" y="64" width="9" height="6" fill="' + lv + '"/>';
+      s += '<rect x="50" y="64" width="9" height="6" fill="' + lv + '"/>';
     } else {
-      s += `<rect x="20" y="59" width="30" height="34" rx="3" fill="${bc1}"/>`;
-      s += `<path d="M22 59 L48 59 L45 93 L25 93 Z" fill="${bc2}" opacity=".85"/>`;
-      const lc = lv || bc1;
-      s += `<line x1="35" y1="59" x2="35" y2="93" stroke="${lc}" stroke-width="1.3"/>`;
-      if (bTier>=2) {
-        // pauldrons
-        s += `<path d="M10 57 L21 57 L22 73 L11 73 Z" fill="${bc2}" stroke="${lc}" stroke-width=".6"/>`;
-        s += `<path d="M49 57 L60 57 L59 73 L48 73 Z" fill="${bc2}" stroke="${lc}" stroke-width=".6"/>`;
-        s += `<rect x="11" y="64" width="9" height="6" fill="${lc}"/>`;
-        s += `<rect x="50" y="64" width="9" height="6" fill="${lc}"/>`;
-      } else {
-        s += `<rect x="14" y="60" width="9" height="12" rx="3" fill="${ps||bc1}"/>`;
-        s += `<rect x="47" y="60" width="9" height="12" rx="3" fill="${ps||bc1}"/>`;
-      }
-      if (bTier===4) {
-        // runic runes on chest
-        s += `<path d="M28 73 Q35 69 42 73" stroke="${sc}" fill="none" stroke-width=".9" opacity=".75"/>`;
-        s += `<path d="M28 83 Q35 79 42 83" stroke="${sc}" fill="none" stroke-width=".9" opacity=".75"/>`;
-        s += `<circle cx="16" cy="64" r="3" fill="${sc}" opacity=".85"/>`;
-        s += `<circle cx="54" cy="64" r="3" fill="${sc}" opacity=".85"/>`;
-      }
+      s += '<rect x="14" y="60" width="9" height="12" rx="3" fill="' + (ps || bc1) + '"/>';
+      s += '<rect x="47" y="60" width="9" height="12" rx="3" fill="' + (ps || bc1) + '"/>';
+    }
+    if (arTier >= 4) {
+      s += '<path d="M28 73 Q35 69 42 73" stroke="' + sc + '" fill="none" stroke-width=".9" opacity=".75"/>';
+      s += '<path d="M28 83 Q35 79 42 83" stroke="' + sc + '" fill="none" stroke-width=".9" opacity=".75"/>';
+      s += '<circle cx="16" cy="64" r="3" fill="' + sc + '" opacity=".85"/>';
+      s += '<circle cx="54" cy="64" r="3" fill="' + sc + '" opacity=".85"/>';
     }
   }
 
   // ── ARMS ──────────────────────────────────────────────────────────────────
-  const armC = bTier>=1 ? (bTier>=2 ? '#8898a8' : '#5a6878') : '#5a3c1e';
-  s += `<rect x="12" y="62" width="10" height="24" rx="3" fill="${armC}"/>`;
-  s += `<rect x="48" y="62" width="10" height="24" rx="3" fill="${armC}"/>`;
-  if (bTier===3) {
-    s += `<circle cx="17" cy="77" r="3" fill="${sc}" opacity=".6"/>`;
-    s += `<circle cx="53" cy="77" r="3" fill="${sc}" opacity=".6"/>`;
+  const armC = arTier >= 1 ? (arTier >= 2 ? '#8898a8' : '#5a6878') : '#5a3c1e';
+  s += '<rect x="12" y="62" width="10" height="24" rx="3" fill="' + armC + '"/>';
+  s += '<rect x="48" y="62" width="10" height="24" rx="3" fill="' + armC + '"/>';
+  if (arTier >= 3) {
+    s += '<circle cx="17" cy="77" r="3" fill="' + sc + '" opacity=".6"/>';
+    s += '<circle cx="53" cy="77" r="3" fill="' + sc + '" opacity=".6"/>';
   }
-  s += `<ellipse cx="17" cy="88" rx="4.5" ry="3.5" fill="${skin}"/>`;
-  s += `<ellipse cx="53" cy="88" rx="4.5" ry="3.5" fill="${skin}"/>`;
+  s += '<ellipse cx="17" cy="88" rx="4.5" ry="3.5" fill="' + skin + '"/>';
+  s += '<ellipse cx="53" cy="88" rx="4.5" ry="3.5" fill="' + skin + '"/>';
 
-  // ── WEAPON — 4 color tiers ────────────────────────────────────────────────
-  // Palette: [blade, crossguard, tip]
-  const wPal = [
-    null,
-    ['#b0b0a8','#808078','#c8c8c0'],  // 1: iron gray
-    ['#686870','#484850','#909098'],  // 2: dark steel
-    ['#303038','#202028','#484850'],  // 3: blackened
-    [sd, sm, sc],                     // 4: runic
-  ];
-  if (wTier>=1) {
-    const [blade, guard, tip] = wPal[wTier];
-    if (wTier<=2) {
-      // Standard sword
-      s += `<rect x="57.5" y="55" width="4" height="42" rx="1.2" fill="${blade}"/>`;
-      s += `<rect x="52" y="70" width="15" height="3" rx="1" fill="${guard}"/>`;
-      s += `<polygon points="59.5,49 57.5,57 61.5,57" fill="${tip}"/>`;
-    } else if (wTier===3) {
-      // Blackened great sword
-      s += `<rect x="57" y="44" width="5" height="54" rx="1.5" fill="${blade}"/>`;
-      s += `<rect x="50" y="65" width="18" height="3.5" rx="1.5" fill="${guard}"/>`;
-      s += `<polygon points="59.5,37 57,47 62,47" fill="${tip}"/>`;
-      s += `<line x1="57" y1="44" x2="62" y2="98" stroke="${tip}" stroke-width=".4" opacity=".5"/>`;
+  // ── MAGIC BOOK / ORB (staff) — left hand ─────────────────────────────────
+  if (stTier >= 1) {
+    if (stTier === 1) {
+      // Leather tome
+      s += '<rect x="5" y="73" width="13" height="18" rx="1.5" fill="#5a3818"/>';
+      s += '<rect x="6" y="74" width="11" height="16" rx="1" fill="#6a4828"/>';
+      s += '<line x1="11.5" y1="73" x2="11.5" y2="91" stroke="#3a2008" stroke-width="1.5"/>';
+      s += '<rect x="15" y="79" width="2.5" height="7" rx="1" fill="#c8a060" opacity=".4"/>';
+    } else if (stTier === 2) {
+      // Ancient tome — dark leather, clasps, symbol
+      s += '<rect x="4" y="71" width="14" height="20" rx="2" fill="#2a1c10"/>';
+      s += '<rect x="5" y="72" width="12" height="18" rx="1.5" fill="#3a2818"/>';
+      s += '<rect x="5.5" y="72.5" width="4" height="17" fill="#2a1c10"/>';
+      s += '<rect x="17" y="78" width="2" height="7" rx="1" fill="#c0a030" opacity=".8"/>';
+      s += '<path d="M10 77 L12 75 L14 77 L12 79 Z" fill="' + sc + '" opacity=".7"/>';
+      s += '<circle cx="12" cy="83" r="1.5" fill="' + sc + '" opacity=".6"/>';
     } else {
-      // Runic weapon (glowing)
-      s += '<filter id="wg"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-      s += `<rect x="57" y="42" width="5" height="57" rx="2.5" fill="${blade}" stroke="${sc}" stroke-width=".8" filter="url(#wg)"/>`;
-      s += `<rect x="50" y="62" width="18" height="3.5" rx="1.5" fill="${guard}" stroke="${sc}" stroke-width=".7"/>`;
-      s += `<polygon points="59.5,34 57,46 62,46" fill="${sc}" filter="url(#wg)"/>`;
-      s += `<line x1="59.5" y1="50" x2="59.5" y2="93" stroke="${sc}" stroke-width=".8" opacity=".65"/>`;
-      s += `<path d="M56 62 L59.5 57 L63 62" stroke="${sc}" fill="none" stroke-width=".9"/>`;
-      s += `<path d="M56 76 L59.5 71 L63 76" stroke="${sc}" fill="none" stroke-width=".9"/>`;
+      // Arcane grimoire — glowing runes, floating feel
+      s += '<rect x="4" y="70" width="14" height="21" rx="2" fill="#0e0818" filter="url(#wg)"/>';
+      s += '<rect x="5" y="71" width="12" height="19" rx="1.5" fill="#1a1028"/>';
+      s += '<rect x="5.5" y="71.5" width="4" height="18" fill="#0e0818"/>';
+      s += '<rect x="9.5" y="72" width="7" height="18" fill="' + sc + '" opacity=".12"/>';
+      s += '<text x="13" y="78" text-anchor="middle" font-size="4.5" fill="' + sc + '" opacity=".9">ᚱ</text>';
+      s += '<text x="13" y="84" text-anchor="middle" font-size="4.5" fill="' + sc + '" opacity=".8">ᚠ</text>';
+      s += '<text x="13" y="90" text-anchor="middle" font-size="4.5" fill="' + sc + '" opacity=".7">ᛟ</text>';
+      s += '<rect x="4" y="70" width="14" height="21" rx="2" fill="' + sc + '" opacity=".07"/>';
     }
   }
 
-  // ── NECK + HEAD ───────────────────────────────────────────────────────────
-  s += `<rect x="29" y="50" width="12" height="12" rx="3" fill="${skin}"/>`;
+  // ── SWORD (right hand) ────────────────────────────────────────────────────
+  const wPal = [
+    null,
+    ['#b0b0a8','#808078','#c8c8c0'],
+    ['#686870','#484850','#909098'],
+    ['#303038','#202028','#484850'],
+    [sd, sm, sc],
+  ];
+  if (wTier >= 1) {
+    const [blade, guard, tip] = wPal[wTier];
+    if (wTier <= 2) {
+      s += '<rect x="57.5" y="55" width="4" height="42" rx="1.2" fill="' + blade + '"/>';
+      s += '<rect x="52" y="70" width="15" height="3" rx="1" fill="' + guard + '"/>';
+      s += '<polygon points="59.5,49 57.5,57 61.5,57" fill="' + tip + '"/>';
+    } else if (wTier === 3) {
+      s += '<rect x="57" y="44" width="5" height="54" rx="1.5" fill="' + blade + '"/>';
+      s += '<rect x="50" y="65" width="18" height="3.5" rx="1.5" fill="' + guard + '"/>';
+      s += '<polygon points="59.5,37 57,47 62,47" fill="' + tip + '"/>';
+      s += '<line x1="57" y1="44" x2="62" y2="98" stroke="' + tip + '" stroke-width=".4" opacity=".5"/>';
+    } else {
+      // Runic blade
+      s += '<rect x="57" y="42" width="5" height="57" rx="2.5" fill="' + blade + '" stroke="' + sc + '" stroke-width=".8" filter="url(#wg)"/>';
+      s += '<rect x="50" y="62" width="18" height="3.5" rx="1.5" fill="' + guard + '" stroke="' + sc + '" stroke-width=".7"/>';
+      s += '<polygon points="59.5,34 57,46 62,46" fill="' + sc + '" filter="url(#wg)"/>';
+      s += '<line x1="59.5" y1="50" x2="59.5" y2="93" stroke="' + sc + '" stroke-width=".8" opacity=".65"/>';
+      s += '<path d="M56 62 L59.5 57 L63 62" stroke="' + sc + '" fill="none" stroke-width=".9"/>';
+      s += '<path d="M56 76 L59.5 71 L63 76" stroke="' + sc + '" fill="none" stroke-width=".9"/>';
+    }
+  }
 
-  // ── HEAD / HELMET — 4 tiers ───────────────────────────────────────────────
-  if (hTier===0) {
-    // Bare head
-    s += `<ellipse cx="35" cy="35" rx="12" ry="14" fill="${skin}"/>`;
-    s += `<path d="M23 29 Q27 16 35 15 Q43 16 47 29 Q43 20 35 19 Q27 20 23 29 Z" fill="#3a2010"/>`;
+  // ── NECK ──────────────────────────────────────────────────────────────────
+  s += '<rect x="29" y="50" width="12" height="12" rx="3" fill="' + skin + '"/>';
+
+  // ── AMULET (rune) — pendant on neck chain ─────────────────────────────────
+  if (ruTier >= 1) {
+    const rChain = ['#b89020','#9040e0','#30b0e8'][ruTier - 1];
+    const rGem   = ['#e8a030','#c060ff','#80eeff'][ruTier - 1];
+    // Thin chain draping over chest
+    s += '<path d="M31 57 Q35 63 39 57" stroke="' + rChain + '" fill="none" stroke-width=".9" opacity=".85"/>';
+    // Diamond pendant
+    s += '<polygon points="35,60 33,64 35,67 37,64" fill="' + rGem + '" opacity=".95"/>';
+    s += '<polygon points="35,60 33,64 35,62 37,64" fill="' + rChain + '" opacity=".5"/>';
+    if (ruTier >= 2) {
+      // Ornate setting around gem
+      s += '<circle cx="35" cy="63.5" r="5" fill="none" stroke="' + rChain + '" stroke-width=".7" opacity=".7"/>';
+    }
+    if (ruTier >= 3) {
+      // Glowing halo
+      s += '<circle cx="35" cy="63.5" r="6" fill="' + rGem + '" opacity=".18" filter="url(#wg)"/>';
+      s += '<polygon points="35,60 33,64 35,67 37,64" fill="' + rGem + '" filter="url(#wg)" opacity=".7"/>';
+    }
+  }
+
+  // ── HEAD / HELMET — follows arTier ────────────────────────────────────────
+  if (hTier === 0) {
+    s += '<ellipse cx="35" cy="35" rx="12" ry="14" fill="' + skin + '"/>';
+    s += '<path d="M23 29 Q27 16 35 15 Q43 16 47 29 Q43 20 35 19 Q27 20 23 29 Z" fill="#3a2010"/>';
     s += '<ellipse cx="30" cy="31" rx="2.5" ry="3" fill="white"/><ellipse cx="40" cy="31" rx="2.5" ry="3" fill="white"/>';
     s += '<ellipse cx="30" cy="32" rx="1.5" ry="2" fill="#3060a0"/><ellipse cx="40" cy="32" rx="1.5" ry="2" fill="#3060a0"/>';
     s += '<circle cx="30.6" cy="31" r=".7" fill="white"/><circle cx="40.6" cy="31" r=".7" fill="white"/>';
-  } else if (hTier===1) {
-    // Iron open helm (gray)
-    s += `<ellipse cx="35" cy="35" rx="12" ry="14" fill="${skin}"/>`;
+  } else if (hTier === 1) {
+    s += '<ellipse cx="35" cy="35" rx="12" ry="14" fill="' + skin + '"/>';
     s += '<path d="M23 30 Q23 16 35 15 Q47 16 47 30 L45 30 Q45 19 35 19 Q25 19 25 30 Z" fill="#6a7888"/>';
     s += '<rect x="23" y="28" width="24" height="5" rx="1" fill="#5a6878"/>';
     s += '<rect x="33" y="28" width="4" height="10" rx="1" fill="#7a8898"/>';
     s += '<ellipse cx="30" cy="34" rx="2.5" ry="2.5" fill="white"/><ellipse cx="40" cy="34" rx="2.5" ry="2.5" fill="white"/>';
     s += '<ellipse cx="30" cy="34" rx="1.5" ry="1.5" fill="#3060a0"/><ellipse cx="40" cy="34" rx="1.5" ry="1.5" fill="#3060a0"/>';
-  } else if (hTier===2) {
-    // Dark plate helm
-    s += `<ellipse cx="35" cy="35" rx="14" ry="16" fill="${skin}"/>`;
+  } else if (hTier === 2) {
+    s += '<ellipse cx="35" cy="35" rx="14" ry="16" fill="' + skin + '"/>';
     s += '<path d="M21 27 Q21 13 35 12 Q49 13 49 27" fill="#485868" stroke="#384858" stroke-width=".8"/>';
     s += '<rect x="21" y="25" width="28" height="8" rx="1.5" fill="#404e5e"/>';
     s += '<rect x="22" y="27" width="26" height="3.5" rx="1" fill="#0a1018"/>';
     s += '<rect x="26" y="27.5" width="8" height="2" rx=".8" fill="#3050a0" opacity=".8"/>';
     s += '<rect x="36" y="27.5" width="8" height="2" rx=".8" fill="#3050a0" opacity=".8"/>';
     s += '<path d="M29 12 Q35 3 41 12" stroke="#902020" fill="none" stroke-width="2"/>';
-  } else if (hTier===3) {
-    // Blackened great helm
-    s += `<ellipse cx="35" cy="35" rx="14" ry="16" fill="${skin}"/>`;
+  } else if (hTier === 3) {
+    s += '<ellipse cx="35" cy="35" rx="14" ry="16" fill="' + skin + '"/>';
     s += '<path d="M21 27 Q21 12 35 11 Q49 12 49 27" fill="#181e24" stroke="#242c36" stroke-width=".8"/>';
     s += '<rect x="21" y="25" width="28" height="8" rx="1.5" fill="#1a2028"/>';
     s += '<rect x="22" y="27" width="26" height="3.5" rx="1" fill="#05080c"/>';
     s += '<rect x="26" y="27.5" width="8" height="2" rx=".8" fill="#203880" opacity=".7"/>';
     s += '<rect x="36" y="27.5" width="8" height="2" rx=".8" fill="#203880" opacity=".7"/>';
-  } else {
+  } else { // hTier === 4
     // Runic crown
-    s += `<ellipse cx="35" cy="35" rx="14" ry="16" fill="${sd}" stroke="${sc}" stroke-width=".7"/>`;
-    s += `<path d="M21 25 Q21 11 35 10 Q49 11 49 25" fill="${sm}" stroke="${sc}" stroke-width=".7"/>`;
-    s += `<polygon points="27,11 23,1 31,11" fill="${sc}"/>`;
-    s += `<polygon points="35,11 35,0 35,11" fill="${sc}"/>`;
-    s += `<polygon points="43,11 47,1 39,11" fill="${sc}"/>`;
+    s += '<ellipse cx="35" cy="35" rx="14" ry="16" fill="' + sd + '" stroke="' + sc + '" stroke-width=".7"/>';
+    s += '<path d="M21 25 Q21 11 35 10 Q49 11 49 25" fill="' + sm + '" stroke="' + sc + '" stroke-width=".7"/>';
+    s += '<polygon points="27,11 23,1 31,11" fill="' + sc + '"/>';
+    s += '<polygon points="35,11 35,0 35,11" fill="' + sc + '"/>';
+    s += '<polygon points="43,11 47,1 39,11" fill="' + sc + '"/>';
     s += '<rect x="22" y="25" width="26" height="5.5" rx="1.5" fill="#060810"/>';
-    s += `<ellipse cx="29" cy="27.5" rx="4" ry="2" fill="${sc}" opacity=".95"/>`;
-    s += `<ellipse cx="41" cy="27.5" rx="4" ry="2" fill="${sc}" opacity=".95"/>`;
-    s += `<text x="35" y="22" text-anchor="middle" font-size="5" fill="${sc}" opacity=".75">ᚱ</text>`;
+    s += '<ellipse cx="29" cy="27.5" rx="4" ry="2" fill="' + sc + '" opacity=".95"/>';
+    s += '<ellipse cx="41" cy="27.5" rx="4" ry="2" fill="' + sc + '" opacity=".95"/>';
+    s += '<text x="35" y="22" text-anchor="middle" font-size="5" fill="' + sc + '" opacity=".75">ᚱ</text>';
   }
 
-  // Stage aura for high stages
-  if (stage>=4) s += `<ellipse cx="35" cy="65" rx="33" ry="63" fill="none" stroke="${sc}" stroke-width=".5" opacity=".2"/>`;
-  if (stage>=6) s += `<ellipse cx="35" cy="65" rx="34" ry="64" fill="none" stroke="${sc}" stroke-width="1" opacity=".3"/>`;
+  // Stage aura
+  if (stage >= 4) s += '<ellipse cx="35" cy="65" rx="33" ry="63" fill="none" stroke="' + sc + '" stroke-width=".5" opacity=".2"/>';
+  if (stage >= 6) s += '<ellipse cx="35" cy="65" rx="34" ry="64" fill="none" stroke="' + sc + '" stroke-width="1" opacity=".3"/>';
 
   return s;
 }
