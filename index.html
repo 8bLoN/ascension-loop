@@ -90,11 +90,44 @@ body {
 }
 #header-stats {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   font-size: 11px;
+  align-items: center;
 }
 .hstat { color: var(--text2); }
 .hstat span { color: var(--text); font-weight: bold; }
+
+/* Gold badge — large, always visible */
+#gold-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(240,192,64,0.18), rgba(240,192,64,0.06));
+  border: 1px solid rgba(240,192,64,0.5);
+  border-radius: 6px;
+  padding: 4px 12px 4px 8px;
+  box-shadow: 0 0 10px rgba(240,192,64,0.15);
+}
+#gold-coin-icon {
+  font-size: 18px;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px #f0c040);
+  animation: coinSpin 4s linear infinite;
+}
+@keyframes coinSpin {
+  0%,100% { transform: scaleX(1); }
+  45%     { transform: scaleX(1); }
+  50%     { transform: scaleX(0.08); }
+  55%     { transform: scaleX(1); }
+}
+#gold-badge-val {
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(240,192,64,0.6);
+  letter-spacing: 0.5px;
+  min-width: 60px;
+}
 #reset-btn {
   background: none;
   border: 1px solid var(--essence);
@@ -720,10 +753,14 @@ body {
       <div id="evo-label2" style="font-size:10px;color:var(--text2);margin-top:2px;">0 / 1.00B total damage</div>
     </div>
     <div id="header-stats">
-      <div class="hstat">Gold: <span id="h-gold">0</span></div>
-      <div class="hstat">Total DMG: <span id="h-totdmg">0</span></div>
-      <div class="hstat" id="h-ess-wrap" style="display:none">Essence: <span id="h-essence">0</span></div>
-      <div class="hstat" id="h-dm-wrap" style="display:none">Dark Matter: <span id="h-dm">0</span></div>
+      <!-- Gold badge — prominent always-visible display -->
+      <div id="gold-badge">
+        <span id="gold-coin-icon">🪙</span>
+        <span id="gold-badge-val">0</span>
+      </div>
+      <div class="hstat">DMG: <span id="h-totdmg">0</span></div>
+      <div class="hstat" id="h-ess-wrap" style="display:none">✦ <span id="h-essence">0</span></div>
+      <div class="hstat" id="h-dm-wrap" style="display:none">⬡ <span id="h-dm">0</span></div>
     </div>
     <button id="reset-btn" disabled title="Available at Stage 7">⟳ COLLAPSE</button>
   </div>
@@ -928,12 +965,12 @@ const STAGE_COLORS = [
 // ===== WEAPON UPGRADE DEFINITIONS =====
 const WEAPONS = [
   // sword and rune effects are no-ops: damage is computed from counts in getClickDamage()
-  { id: 'sword',  name: 'Iron Sword',      icon: '⚔',  desc: '+10 click damage (stacks)', baseCost: 50,   costMult: 2.2,   effect: () => {} },
-  { id: 'bow',    name: 'Hunter Bow',       icon: '🏹', desc: '+3% crit chance',   baseCost: 120,  costMult: 2.5,   effect: () => { G.critChance += 0.03; } },
-  { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 300, costMult: 2.8, effect: () => { G.critMult += 0.5; } },
-  { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+10% auto DPS',     baseCost: 200,  costMult: 2.0,   effect: () => {} },
-  { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click damage (stacks)', baseCost: 1000, costMult: 3.0, effect: () => {} },
-  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock auto-DPS (2 DPS)', baseCost: 80, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
+  { id: 'sword',  name: 'Iron Sword',      icon: '⚔',  desc: '+10 click damage (stacks)', baseCost: 15,   costMult: 1.9,   effect: () => {} },
+  { id: 'bow',    name: 'Hunter Bow',       icon: '🏹', desc: '+3% crit chance',   baseCost: 40,   costMult: 2.2,   effect: () => { G.critChance += 0.03; } },
+  { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 100, costMult: 2.5, effect: () => { G.critMult += 0.5; } },
+  { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+10% auto DPS',     baseCost: 60,   costMult: 1.8,   effect: () => {} },
+  { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click damage (stacks)', baseCost: 300, costMult: 2.8, effect: () => {} },
+  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock auto-DPS (2 DPS)', baseCost: 25, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
 ];
 
 // ===== UNIT DEFINITIONS (Stage 2) =====
@@ -1031,16 +1068,19 @@ const BOSS_NAMES = {
 
 // ===== WAVE SYSTEM =====
 function getEnemyHP(wave, stage) {
-  // Each wave: +15% HP. Bosses: x15 HP. Per stage: base increases.
+  // Waves scale +14% each. Bosses x12. Stage base grows exponentially.
+  // Stage 1 early waves kept low so first few upgrades unlock fast.
   const stageBase = Math.pow(10, (stage - 1) * 9);
-  const waveScale = Math.pow(1.18, wave - 1);
+  const waveScale = Math.pow(1.14, wave - 1);
   const isBoss = wave % 10 === 0;
-  return stageBase * waveScale * (isBoss ? 15 : 1);
+  return stageBase * waveScale * (isBoss ? 12 : 1);
 }
 function getEnemyGold(wave, stage) {
   const isBoss = wave % 10 === 0;
-  const base = Math.pow(10, (stage - 1) * 8) * wave;
-  const bossBonus = isBoss ? 8 : 1;
+  // Early-game boost: base gold is 10x higher in stage 1, tapering to normal by stage 3+
+  const earlyBoost = stage === 1 ? 10 : stage === 2 ? 3 : 1;
+  const base = Math.pow(10, (stage - 1) * 8) * wave * earlyBoost;
+  const bossBonus = isBoss ? 12 : 1;   // boss gives 12x (was 8x)
   const planet_void = G.planets.void ? 3 : 1;
   const mv_fracture = G.multiverse.fracture && isBoss ? 20 : 1;
   const law_creation = G.laws.creation ? 20 : 1;
@@ -1389,7 +1429,7 @@ function updateHeader() {
   badge.style.color = col;
   badge.style.borderColor = col;
 
-  document.getElementById('h-gold').textContent = fmt(G.gold);
+  document.getElementById('gold-badge-val').textContent = fmt(G.gold);
   document.getElementById('h-totdmg').textContent = fmtBig(G.totalDamage);
 
   // Essence / DM visibility
