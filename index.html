@@ -988,12 +988,12 @@ const STAGE_COLORS = [
 // ===== WEAPON UPGRADE DEFINITIONS =====
 const WEAPONS = [
   // sword and rune effects are no-ops: damage is computed from counts in getClickDamage()
-  { id: 'sword',  name: 'Iron Sword',      icon: '⚔',  desc: '+10 click damage (stacks)', baseCost: 15,   costMult: 1.9,   effect: () => {} },
-  { id: 'bow',    name: 'Hunter Bow',       icon: '🏹', desc: '+3% crit chance',   baseCost: 40,   costMult: 2.2,   effect: () => { G.critChance += 0.03; } },
-  { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 100, costMult: 2.5, effect: () => { G.critMult += 0.5; } },
-  { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+10% auto DPS',     baseCost: 60,   costMult: 1.8,   effect: () => {} },
-  { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click damage (stacks)', baseCost: 300, costMult: 2.8, effect: () => {} },
-  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock auto-DPS (scales with all click upgrades!)', baseCost: 10, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
+  { id: 'sword',  name: 'Iron Sword',      icon: '⚔',  desc: '+10 click dmg & +3 auto DPS (stacks)', baseCost: 20,   costMult: 1.9,   effect: () => {} },
+  { id: 'bow',    name: 'Hunter Bow',       icon: '🏹', desc: '+3% crit chance',   baseCost: 55,   costMult: 2.2,   effect: () => { G.critChance += 0.03; } },
+  { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 130, costMult: 2.5, effect: () => { G.critMult += 0.5; } },
+  { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+12% auto DPS',     baseCost: 80,   costMult: 1.8,   effect: () => {} },
+  { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click dmg & +60% auto DPS (stacks)', baseCost: 350, costMult: 2.8, effect: () => {} },
+  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock passive auto-DPS (scales with swords & armor)', baseCost: 12, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
 ];
 
 // ===== UNIT DEFINITIONS (Stage 2) =====
@@ -1091,19 +1091,19 @@ const BOSS_NAMES = {
 
 // ===== WAVE SYSTEM =====
 function getEnemyHP(wave, stage) {
-  // Waves scale +14% each. Bosses x12. Stage base grows exponentially.
-  // Stage 1 early waves kept low so first few upgrades unlock fast.
-  const stageBase = Math.pow(10, (stage - 1) * 9);
-  const waveScale = Math.pow(1.14, wave - 1);
+  // Stage 1 base starts at 15 HP so first wave requires actual clicks.
+  // Each wave +18%. Boss x10. Later stages scale exponentially in base.
+  const stageBase = stage === 1 ? 15 : Math.pow(10, (stage - 1) * 9);
+  const waveScale = Math.pow(1.18, wave - 1);
   const isBoss = wave % 10 === 0;
-  return stageBase * waveScale * (isBoss ? 12 : 1);
+  return stageBase * waveScale * (isBoss ? 10 : 1);
 }
 function getEnemyGold(wave, stage) {
   const isBoss = wave % 10 === 0;
-  // Early-game boost: base gold is 10x higher in stage 1, tapering to normal by stage 3+
-  const earlyBoost = stage === 1 ? 10 : stage === 2 ? 3 : 1;
+  // Stage 1 gold boosted 15x to match the higher HP base (15 HP vs old 1 HP).
+  const earlyBoost = stage === 1 ? 15 : stage === 2 ? 4 : 1;
   const base = Math.pow(10, (stage - 1) * 8) * wave * earlyBoost;
-  const bossBonus = isBoss ? 12 : 1;   // boss gives 12x (was 8x)
+  const bossBonus = isBoss ? 10 : 1;
   const planet_void = G.planets.void ? 3 : 1;
   const mv_fracture = G.multiverse.fracture && isBoss ? 20 : 1;
   const law_creation = G.laws.creation ? 20 : 1;
@@ -1168,12 +1168,13 @@ function getAutoDPS() {
   if (!G.weapons.autoAttack && !G.essenceUpgrades.autoStart) return 0;
   let dps = 2; // base from auto-attack upgrade
 
-  // Click upgrades also apply to auto-DPS (sword training, rune power)
-  dps += G.weapons.sword * 10 * (1 + G.weapons.sword * 0.15);
-  for (let i = 0; i < G.weapons.rune; i++) dps *= 2;
+  // Sword/rune give auto a smaller bonus (not the full click formula).
+  // This keeps auto as a supplement — clicks are the main scaling tool.
+  dps += G.weapons.sword * 3;
+  dps *= (1 + G.weapons.rune * 0.6);
 
   // Weapon armor bonus
-  dps *= (1 + G.weapons.armor * 0.1);
+  dps *= (1 + G.weapons.armor * 0.12);
 
   // Units (Stage 2)
   if (G.stage >= 2) {
@@ -1213,12 +1214,10 @@ function getAutoDPS() {
   if (G.multiverse.rift) dps *= 10000;
   if (G.multiverse.loop) dps *= (1 + G.totalWavesCleared * 0.001);
 
-  // Absolute: Chronos + Logos rewards
+  // Absolute: Chronos reward (auto-DPS only)
   dps *= G.absRewards.chronosMult;
-  dps *= G.absRewards.logosClickMult;
 
-  // Essence multipliers (click power also scales auto)
-  dps *= (1 + G.essenceUpgrades.clickPower * 0.5);
+  // Essence: dmgMult applies to all damage; clickPower is click-only
   dps *= (1 + G.essenceUpgrades.dmgMult * 0.25);
 
   return dps;
