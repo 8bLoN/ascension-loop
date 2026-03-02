@@ -3,36 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ascension Loop</title>
+<title>Vlicker</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #07070f;
-  --bg2: #0e0e1a;
-  --bg3: #14142a;
-  --border: #252540;
-  --text: #c8c8e8;
-  --text2: #8888aa;
-  --gold: #f0c040;
-  --essence: #b060ff;
-  --dm: #40d0ff;
-  --red: #ff4060;
-  --green: #40ff80;
-  --s1: #60a0ff;
-  --s2: #40ffaa;
-  --s3: #ff8040;
-  --s4: #a060ff;
-  --s5: #ff40ff;
-  --s6: #ff6040;
-  --s7: #ffffff;
-  --glow: 0 0 12px currentColor;
+  --bg:     #0a0305;
+  --bg2:    #130608;
+  --bg3:    #1c080a;
+  --border: #3a1018;
+  --text:   #d4b8b8;
+  --text2:  #8a5560;
+  --gold:   #e8a030;
+  --essence:#c060ff;
+  --dm:     #40c8ff;
+  --red:    #ff3040;
+  --green:  #60e060;
+  --s1:     #cc2020;
+  --s2:     #e84040;
+  --s3:     #ff6020;
+  --s4:     #c040ff;
+  --s5:     #ff2060;
+  --s6:     #ff4020;
+  --s7:     #ffe0d0;
+  --glow:   0 0 12px currentColor;
+  --crimson: #8b0000;
+  --crimson2:#5a0010;
 }
 html, body { height: 100%; }
 body {
-  background-color: #040408;
+  background-color: #060103;
   background-image:
     repeating-linear-gradient(
       0deg,
@@ -73,7 +75,7 @@ body::after {
   overflow: hidden;
 }
 #header {
-  background: rgba(14,14,26,0.88);
+  background: rgba(18,4,7,0.92);
   border-bottom: 1px solid var(--border);
   padding: 8px 16px;
   display: flex;
@@ -172,7 +174,7 @@ body::after {
   height: 100%;
 }
 .panel {
-  background: rgba(14,14,26,0.82);
+  background: rgba(16,4,6,0.88);
   border-right: 1px solid var(--border);
   overflow-y: auto;
   padding: 10px;
@@ -190,15 +192,15 @@ body::after {
   padding: 16px;
   gap: 12px;
   overflow-y: auto;
-  background: rgba(7,7,15,0.75);
+  background: rgba(10,3,5,0.82);
 }
 
 /* ===== SECTION HEADERS ===== */
 .sec-title {
   font-size: 10px;
   letter-spacing: 2px;
-  color: var(--text2);
-  border-bottom: 1px solid var(--border);
+  color: #b05060;
+  border-bottom: 1px solid rgba(160,30,40,0.4);
   padding-bottom: 4px;
   text-transform: uppercase;
 }
@@ -262,23 +264,23 @@ body::after {
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  border: 3px solid var(--s1);
-  background: radial-gradient(circle at 40% 35%, rgba(96,160,255,0.2), transparent 70%);
-  color: var(--s1);
+  border: 3px solid #cc2020;
+  background: radial-gradient(circle at 40% 35%, rgba(180,20,20,0.35), rgba(80,5,5,0.6) 70%);
+  color: #ff8080;
   font-size: 14px;
   font-family: inherit;
   font-weight: bold;
   cursor: pointer;
   letter-spacing: 1px;
-  text-shadow: var(--glow);
-  box-shadow: 0 0 20px rgba(96,160,255,0.2), inset 0 0 20px rgba(96,160,255,0.05);
+  text-shadow: 0 0 12px rgba(200,30,30,0.8);
+  box-shadow: 0 0 22px rgba(160,20,20,0.35), inset 0 0 20px rgba(140,10,10,0.15);
   transition: transform 0.08s, box-shadow 0.08s, border-color 0.5s, color 0.5s;
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
 }
 #click-btn:active { transform: scale(0.93); }
-#click-btn:hover { box-shadow: 0 0 30px rgba(96,160,255,0.4), inset 0 0 30px rgba(96,160,255,0.1); }
+#click-btn:hover { box-shadow: 0 0 35px rgba(200,30,30,0.5), inset 0 0 30px rgba(180,20,20,0.2); border-color: #ff3030; }
 
 /* ===== DAMAGE FLOATERS ===== */
 .floater {
@@ -312,8 +314,8 @@ body::after {
 /* ===== UPGRADE BUTTONS ===== */
 .upg-btn {
   width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(80,5,12,0.7) 0%, rgba(28,4,8,0.9) 100%);
+  border: 1px solid rgba(140,20,30,0.5);
   color: var(--text);
   padding: 7px 10px;
   margin: 2px 0;
@@ -328,17 +330,18 @@ body::after {
   gap: 2px;
 }
 .upg-btn:hover:not(:disabled) {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.2);
+  background: linear-gradient(135deg, rgba(140,10,20,0.8) 0%, rgba(60,5,10,0.95) 100%);
+  border-color: rgba(220,40,50,0.6);
+  box-shadow: 0 0 8px rgba(180,20,30,0.3);
 }
-.upg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.upg-btn .upg-name { font-weight: bold; font-size: 12px; }
+.upg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.upg-btn .upg-name { font-weight: bold; font-size: 12px; color: #e8b0b0; }
 .upg-btn .upg-desc { color: var(--text2); font-size: 10px; }
 .upg-btn .upg-cost { color: var(--gold); font-size: 10px; text-align: right; }
-.upg-btn .upg-count { color: var(--s2); font-size: 10px; float: right; }
+.upg-btn .upg-count { color: #ff8080; font-size: 10px; float: right; }
 .upg-btn.essence-upg .upg-cost { color: var(--essence); }
 .upg-btn.dm-upg .upg-cost { color: var(--dm); }
-.upg-btn.bought { border-color: var(--green); opacity: 0.6; }
+.upg-btn.bought { border-color: rgba(80,180,80,0.5); opacity: 0.55; background: rgba(10,30,10,0.6); }
 
 /* ===== UNIT CARDS ===== */
 .unit-card {
@@ -526,8 +529,8 @@ body::after {
 /* ===== ESSENCE UPGRADES ===== */
 .essence-upg-btn {
   width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--essence);
+  background: linear-gradient(135deg, rgba(60,10,80,0.7) 0%, rgba(20,3,30,0.9) 100%);
+  border: 1px solid rgba(160,60,220,0.5);
   color: var(--text);
   padding: 7px 10px;
   margin: 2px 0;
@@ -639,11 +642,12 @@ body::after {
   width: 100%;
   max-width: 100%;
   display: flex;
+  justify-content: space-between;
   gap: 8px;
   height: 280px;
   margin: 6px 0;
 }
-/* Hero panel — left, full body, gear upgrades visually */
+/* Hero panel — left, tall, full body */
 #hero-panel {
   width: 130px;
   flex-shrink: 0;
@@ -676,12 +680,13 @@ body::after {
   opacity: 0.5;
   margin-bottom: 2px;
 }
-/* Monster portrait — dominant, face+shoulders close-up */
+/* Monster portrait — compact, right side */
 #monster-panel {
-  flex: 1;
+  width: 140px;
+  flex-shrink: 0;
   position: relative;
-  background: #000;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: #0a0005;
+  border: 1px solid rgba(180,20,20,0.35);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -821,14 +826,12 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif !important; letter-spacin
 #stage-bg svg { width: 100%; height: 100%; }
 #game-wrap { position: relative; z-index: 1; }
 
-/* ===== HERO PANEL (ENLARGED) ===== */
-#hero-panel {
-  width: 130px !important;
-  flex-shrink: 0 !important;
-}
+/* ===== PANELS OVERRIDE ===== */
+#hero-panel { width: 130px !important; flex-shrink: 0 !important; }
+#monster-panel { width: 140px !important; flex-shrink: 0 !important; }
 #hero-name { font-size: 10px !important; letter-spacing: 1.5px !important; }
 #hero-gear-row { font-size: 12px !important; margin-bottom: 4px !important; }
-#battle-scene { gap: 8px !important; height: 280px !important; max-width: 100% !important; }
+#battle-scene { gap: 8px !important; height: 280px !important; max-width: 100% !important; justify-content: space-between !important; }
 
 /* ===== DAMAGE BADGE ===== */
 #dmg-badge {
@@ -943,7 +946,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif !important; letter-spacin
 <div id="game-wrap">
   <!-- HEADER -->
   <div id="header">
-    <h1>ASCENSION LOOP</h1>
+    <h1>VLICKER</h1>
     <div id="stage-badge">STAGE 1</div>
     <div id="evo-bar-wrap">
       <div id="evo-label">Evolution Progress</div>
@@ -1059,7 +1062,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif !important; letter-spacin
 <script>
 'use strict';
 // ============================================================
-//  ASCENSION LOOP — Complete Idle / Clicker Game
+//  VLICKER — Complete Idle / Clicker Game
 //  Single HTML file, vanilla JS, no frameworks
 // ============================================================
 
@@ -3371,7 +3374,7 @@ function init() {
   updateMonsterSVG();
   updateStageBG();
 
-  notify('Welcome to Ascension Loop! Click to begin your journey.');
+  notify('Welcome to Vlicker! Click to begin your journey.');
 }
 
 // Start when DOM ready
