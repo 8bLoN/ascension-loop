@@ -734,6 +734,28 @@ body {
 /* Icon badge on upgrades */
 .upg-icon { font-size: 14px; margin-right: 4px; vertical-align: middle; }
 
+/* ===== HARD RESET BUTTON ===== */
+#hard-reset-btn {
+  width: 100%;
+  margin-top: 10px;
+  background: rgba(120,10,10,0.25);
+  border: 1px solid #6a1010;
+  color: #cc3030;
+  padding: 7px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+#hard-reset-btn:hover {
+  background: rgba(180,20,20,0.35);
+  border-color: #cc2020;
+  box-shadow: 0 0 10px rgba(180,20,20,0.3);
+  color: #ff5050;
+}
+
 /* Responsive */
 @media (max-width: 800px) {
   #main { grid-template-columns: 1fr; }
@@ -836,6 +858,7 @@ body {
       <div id="meta-area"></div>
       <div class="sec-title" style="margin-top:6px" id="stage-info-title">Stage Info</div>
       <div id="stage-info-area" style="font-size:11px;color:var(--text2);line-height:1.8"></div>
+      <button id="hard-reset-btn">☠ HARD RESET — ERASE ALL PROGRESS</button>
     </div>
   </div>
 </div>
@@ -970,7 +993,7 @@ const WEAPONS = [
   { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 100, costMult: 2.5, effect: () => { G.critMult += 0.5; } },
   { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+10% auto DPS',     baseCost: 60,   costMult: 1.8,   effect: () => {} },
   { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click damage (stacks)', baseCost: 300, costMult: 2.8, effect: () => {} },
-  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock auto-DPS (2 DPS)', baseCost: 25, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
+  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock auto-DPS (scales with all click upgrades!)', baseCost: 10, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
 ];
 
 // ===== UNIT DEFINITIONS (Stage 2) =====
@@ -1145,6 +1168,10 @@ function getAutoDPS() {
   if (!G.weapons.autoAttack && !G.essenceUpgrades.autoStart) return 0;
   let dps = 2; // base from auto-attack upgrade
 
+  // Click upgrades also apply to auto-DPS (sword training, rune power)
+  dps += G.weapons.sword * 10 * (1 + G.weapons.sword * 0.15);
+  for (let i = 0; i < G.weapons.rune; i++) dps *= 2;
+
   // Weapon armor bonus
   dps *= (1 + G.weapons.armor * 0.1);
 
@@ -1177,6 +1204,7 @@ function getAutoDPS() {
   if (G.planets.neutron) dps *= 50;
 
   // Laws (Stage 5)
+  if (G.laws.power) dps *= 20;
   if (G.laws.infinity) dps *= 1000;
   if (G.laws.entropy) dps *= 5;
   if (G.laws.time) dps *= 10;
@@ -1185,10 +1213,12 @@ function getAutoDPS() {
   if (G.multiverse.rift) dps *= 10000;
   if (G.multiverse.loop) dps *= (1 + G.totalWavesCleared * 0.001);
 
-  // Absolute: Chronos reward
+  // Absolute: Chronos + Logos rewards
   dps *= G.absRewards.chronosMult;
+  dps *= G.absRewards.logosClickMult;
 
-  // Essence multipliers
+  // Essence multipliers (click power also scales auto)
+  dps *= (1 + G.essenceUpgrades.clickPower * 0.5);
   dps *= (1 + G.essenceUpgrades.dmgMult * 0.25);
 
   return dps;
@@ -2267,366 +2297,534 @@ function getHeroSVG(stage) {
   return h[stage] || h[1];
 }
 
-// --- Monster SVG definitions per stage ---
-// waveVariant 0-7 gives slight shape variations; boss = larger/angrier
+// --- Monster SVG definitions per stage (Diablo II gothic style) ---
 function getMonsterSVG(stage, waveNum, isBoss) {
-  const v = waveNum % 6; // 0-5 variant
+  const v = waveNum % 4;
   const b = isBoss;
-  const sc = b ? 'transform="scale(1.15) translate(-6,-8)"' : '';
-  // Color palettes per stage
-  const pal = {
-    1: ['#40c040','#206020','#80ff60'], // green (slime/forest)
-    2: ['#c08040','#604010','#ffc060'], // bronze (golem)
-    3: ['#c04040','#601010','#ff8040'], // red (army titan)
-    4: ['#8040ff','#401880','#d0a0ff'], // cosmic purple
-    5: ['#ff40ff','#801080','#ffb0ff'], // divine pink
-    6: ['#ff4020','#801000','#ff8040'], // infernal orange
-    7: ['#e0e0ff','#404060','#ffffff']  // void white
-  };
-  const [c1, c2, c3] = pal[stage] || pal[1];
+  const sc = b ? 'transform="scale(1.18) translate(-7,-10)"' : '';
 
-  // Each stage has a unique monster archetype
-  const monsters = {
-    // Stage 1: organic creatures — slime / goblin / skeleton variants
-    1: `<g ${sc}>
-      ${v < 2 ? `
-        <!-- Slime -->
-        <ellipse cx="40" cy="82" rx="28" ry="20" fill="${c1}" opacity="0.9"/>
-        <ellipse cx="40" cy="72" rx="22" ry="26" fill="${c1}"/>
-        <ellipse cx="40" cy="68" rx="18" ry="20" fill="${c2}" opacity="0.4"/>
-        <!-- Eyes -->
-        <circle cx="32" cy="68" r="6" fill="white"/>
-        <circle cx="48" cy="68" r="6" fill="white"/>
-        <circle cx="${33+v}" cy="68" r="3" fill="${c2}"/>
-        <circle cx="${49+v}" cy="68" r="3" fill="${c2}"/>
-        <circle cx="${34+v}" cy="67" r="1.5" fill="black"/>
-        <circle cx="${50+v}" cy="67" r="1.5" fill="black"/>
-        <!-- Mouth -->
-        <path d="M30,78 Q40,${b?86:84} 50,78" stroke="${c2}" stroke-width="2" fill="none"/>
-        ${b ? '<path d="M30,76 L34,80 M38,80 L42,82 L46,80 M50,76 L46,80" stroke="'+c2+'" stroke-width="1.5" fill="none"/>' : ''}
-        <!-- Highlights -->
-        <ellipse cx="32" cy="60" rx="6" ry="4" fill="${c3}" opacity="0.3"/>
-      ` : v < 4 ? `
-        <!-- Goblin -->
-        <ellipse cx="40" cy="100" rx="10" ry="5" fill="${c2}" opacity="0.5"/>
-        <!-- Feet -->
-        <ellipse cx="34" cy="102" rx="6" ry="3" fill="${c2}"/>
-        <ellipse cx="46" cy="102" rx="6" ry="3" fill="${c2}"/>
-        <!-- Legs -->
-        <rect x="31" y="85" width="8" height="18" rx="4" fill="${c1}"/>
-        <rect x="41" y="85" width="8" height="18" rx="4" fill="${c1}"/>
-        <!-- Body -->
-        <ellipse cx="40" cy="75" rx="14" ry="16" fill="${c1}"/>
-        <!-- Arms -->
-        <path d="M26,70 Q16,65 12,72 Q16,76 26,76 Z" fill="${c1}"/>
-        <path d="M54,70 Q64,65 68,72 Q64,76 54,76 Z" fill="${c1}"/>
-        ${b ? '<rect x="62" y="60" width="4" height="30" rx="2" fill="#808080"/><path d="M60,58 Q64,52 68,58 Z" fill="#a0a0a0"/>' : ''}
-        <!-- Head -->
-        <ellipse cx="40" cy="56" rx="14" ry="14" fill="${c1}"/>
-        <!-- Ears -->
-        <path d="M28,52 Q22,46 26,40 Q30,46 32,50 Z" fill="${c1}"/>
-        <path d="M52,52 Q58,46 54,40 Q50,46 48,50 Z" fill="${c1}"/>
-        <!-- Eyes -->
-        <circle cx="35" cy="54" r="4" fill="red"/><circle cx="35" cy="54" r="2" fill="black"/>
-        <circle cx="45" cy="54" r="4" fill="red"/><circle cx="45" cy="54" r="2" fill="black"/>
-        <!-- Nose + teeth -->
-        <ellipse cx="40" cy="60" rx="3" ry="2" fill="${c2}"/>
-        <rect x="36" y="62" width="3" height="5" rx="1" fill="white"/>
-        <rect x="41" y="62" width="3" height="5" rx="1" fill="white"/>
-      ` : `
-        <!-- Skeleton warrior -->
-        <ellipse cx="40" cy="108" rx="12" ry="4" fill="${c2}" opacity="0.4"/>
-        <!-- Feet -->
-        <rect x="32" y="100" width="8" height="6" rx="2" fill="${c3}"/>
-        <rect x="42" y="100" width="8" height="6" rx="2" fill="${c3}"/>
-        <!-- Legs (bones) -->
-        <rect x="34" y="82" width="6" height="20" rx="3" fill="${c3}"/>
-        <rect x="42" y="82" width="6" height="20" rx="3" fill="${c3}"/>
-        <!-- Pelvis -->
-        <ellipse cx="40" cy="82" rx="12" ry="5" fill="${c3}"/>
-        <!-- Ribcage -->
-        <rect x="30" y="60" width="20" height="24" rx="3" fill="${c2}" opacity="0.8"/>
-        <line x1="40" y1="60" x2="40" y2="84" stroke="${c3}" stroke-width="1.5"/>
-        ${[0,1,2,3].map(i=>`<path d="M40,${63+i*5} Q34,${65+i*5} 30,${63+i*5}" stroke="${c3}" stroke-width="1.5" fill="none"/>
-        <path d="M40,${63+i*5} Q46,${65+i*5} 50,${63+i*5}" stroke="${c3}" stroke-width="1.5" fill="none"/>`).join('')}
-        <!-- Arms -->
-        <rect x="18" y="62" width="10" height="5" rx="2" fill="${c3}"/>
-        <rect x="52" y="62" width="10" height="5" rx="2" fill="${c3}"/>
-        <!-- Sword (right) -->
-        <rect x="60" y="40" width="4" height="44" rx="2" fill="#c0c0d0"/>
-        <rect x="56" y="68" width="12" height="3" rx="1" fill="#909090"/>
-        <!-- Shield (left) -->
-        <path d="M10,60 L10,78 Q10,86 18,88 Q26,86 26,78 L26,60 Z" fill="${c2}" stroke="${c3}" stroke-width="1"/>
-        <!-- Skull -->
-        <ellipse cx="40" cy="46" rx="13" ry="14" fill="${c3}"/>
-        <!-- Jaw -->
-        <rect x="34" y="54" width="12" height="6" rx="2" fill="${c3}"/>
-        <line x1="36" y1="58" x2="36" y2="60" stroke="${c2}" stroke-width="1.5"/>
-        <line x1="40" y1="58" x2="40" y2="60" stroke="${c2}" stroke-width="1.5"/>
-        <line x1="44" y1="58" x2="44" y2="60" stroke="${c2}" stroke-width="1.5"/>
-        <!-- Eye sockets -->
-        <ellipse cx="34" cy="44" rx="5" ry="5" fill="${c2}"/>
-        <ellipse cx="46" cy="44" rx="5" ry="5" fill="${c2}"/>
-        <circle cx="34" cy="44" r="2.5" fill="red" opacity="0.8"/>
-        <circle cx="46" cy="44" r="2.5" fill="red" opacity="0.8"/>
-      `}
-    </g>`,
+  /* micro-helpers */
+  const E = (x,y,r,c) => `<circle cx="${x}" cy="${y}" r="${r+2}" fill="#000"/>
+    <circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>
+    <circle cx="${x-r*.3}" cy="${y-r*.3}" r="${r*.35}" fill="white" opacity=".5"/>`;
+  const CL = (x1,y1,x2,y2) =>
+    `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#b0a07a" stroke-width="1.6" stroke-linecap="round"/>`;
 
-    // Stage 2: Iron Golem / Battle-Mage
-    2: `<g ${sc}>
-      ${v < 3 ? `
-        <!-- Iron Golem -->
-        <ellipse cx="40" cy="108" rx="18" ry="5" fill="${c2}" opacity="0.5"/>
-        <!-- Legs — massive -->
-        <rect x="24" y="80" width="14" height="26" rx="4" fill="${c1}"/>
-        <rect x="42" y="80" width="14" height="26" rx="4" fill="${c1}"/>
-        <rect x="23" y="92" width="16" height="5" rx="2" fill="${c3}" opacity="0.5"/>
-        <rect x="41" y="92" width="16" height="5" rx="2" fill="${c3}" opacity="0.5"/>
-        <!-- Body — iron cube -->
-        <rect x="18" y="50" width="44" height="34" rx="6" fill="${c1}"/>
-        <rect x="22" y="54" width="36" height="26" rx="4" fill="${c2}" opacity="0.5"/>
-        <!-- Glowing rune on chest -->
-        <rect x="34" y="60" width="12" height="14" rx="3" fill="${c3}" opacity="0.8"/>
-        <!-- Arms — huge fists -->
-        <rect x="2" y="52" width="14" height="10" rx="3" fill="${c1}"/>
-        <rect x="64" y="52" width="14" height="10" rx="3" fill="${c1}"/>
-        <!-- Fists -->
-        <rect x="0" y="58" width="16" height="16" rx="4" fill="${c1}"/>
-        <rect x="64" y="58" width="16" height="16" rx="4" fill="${c1}"/>
-        <rect x="1" y="60" width="5" height="4" rx="1" fill="${c3}" opacity="0.4"/>
-        <rect x="65" y="60" width="5" height="4" rx="1" fill="${c3}" opacity="0.4"/>
-        <!-- Head — boxy -->
-        <rect x="24" y="28" width="32" height="26" rx="4" fill="${c1}"/>
-        <!-- Eyes (glowing) -->
-        <rect x="28" y="36" width="8" height="6" rx="2" fill="${c3}"/>
-        <rect x="44" y="36" width="8" height="6" rx="2" fill="${c3}"/>
-        <!-- Grille mouth -->
-        ${[0,1,2].map(i=>`<rect x="30" y="${46+i*2}" width="20" height="1" rx="0.5" fill="${c3}" opacity="0.7"/>`).join('')}
-      ` : `
-        <!-- Battle Mage -->
-        <ellipse cx="40" cy="108" rx="14" ry="4" fill="${c2}" opacity="0.4"/>
-        <!-- Robes -->
-        <path d="M26,58 Q20,82 22,108 L58,108 Q60,82 54,58 Z" fill="${c2}"/>
-        <!-- Body glow -->
-        <ellipse cx="40" cy="72" rx="12" ry="14" fill="${c1}" opacity="0.6"/>
-        <!-- Orb on chest -->
-        <circle cx="40" cy="68" r="8" fill="${c3}" opacity="0.4"/>
-        <circle cx="40" cy="68" r="4" fill="${c3}" opacity="0.8"/>
-        <!-- Arms -->
-        <path d="M26,60 Q12,56 8,46 Q14,44 20,52 Q22,56 24,60 Z" fill="${c1}"/>
-        <path d="M54,60 Q68,56 72,46 Q66,44 60,52 Q58,56 56,60 Z" fill="${c1}"/>
-        <!-- Staff -->
-        <rect x="72" y="20" width="4" height="82" rx="2" fill="#a06020"/>
-        <circle cx="74" cy="20" r="8" fill="${c3}" opacity="0.9"/>
-        <line x1="66" y1="14" x2="82" y2="14" stroke="${c3}" stroke-width="2"/>
-        <line x1="74" y1="6" x2="74" y2="22" stroke="${c3}" stroke-width="2"/>
-        <!-- Head -->
-        <circle cx="40" cy="44" r="14" fill="${c1}"/>
-        <!-- Wizard hat -->
-        <path d="M28,44 Q28,30 40,18 Q52,30 52,44 Z" fill="${c2}"/>
-        <rect x="26" y="42" width="28" height="4" rx="2" fill="${c2}"/>
-        <circle cx="40" cy="20" r="4" fill="${c3}"/>
-        <!-- Eyes -->
-        <circle cx="34" cy="44" r="4" fill="${c3}"/><circle cx="34" cy="44" r="2" fill="black"/>
-        <circle cx="46" cy="44" r="4" fill="${c3}"/><circle cx="46" cy="44" r="2" fill="black"/>
-      `}
-    </g>`,
+  // ── Stage 1: Fallen Imp (v<2) | Skeleton Warrior (v≥2) ──────────────────
+  if (stage === 1) {
+    if (v < 2) return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="18" ry="4" fill="#0a0000" opacity=".7"/>
+      <path d="M30,90 Q24,72 28,56 Q32,44 40,42 Q48,44 52,56 Q56,72 50,90 Z" fill="#3a1808"/>
+      <ellipse cx="40" cy="70" rx="9" ry="13" fill="#501810" opacity=".5"/>
+      <path d="M28,60 Q14,50 8,38 Q16,46 24,56 Z" fill="#5a0808" opacity=".8"/>
+      <path d="M52,60 Q66,50 72,38 Q64,46 56,56 Z" fill="#5a0808" opacity=".8"/>
+      <path d="M28,62 Q12,60 8,72 Q12,78 20,72 Q22,66 28,66 Z" fill="#3a1808"/>
+      ${CL(8,72,2,66)}${CL(8,72,2,72)}${CL(8,72,4,78)}
+      <path d="M52,62 Q68,60 72,72 Q68,78 60,72 Q58,66 52,66 Z" fill="#3a1808"/>
+      ${CL(72,72,78,66)}${CL(72,72,78,72)}${CL(72,72,76,78)}
+      <path d="M33,90 Q28,100 26,113 L34,113 Q36,101 40,92 Z" fill="#3a1808"/>
+      <path d="M47,90 Q52,100 54,113 L46,113 Q44,101 40,92 Z" fill="#3a1808"/>
+      ${CL(26,113,20,117)}${CL(28,115,24,119)}${CL(32,115,30,120)}
+      ${CL(54,113,60,117)}${CL(52,115,56,119)}${CL(48,115,50,120)}
+      <ellipse cx="40" cy="32" rx="18" ry="17" fill="#3a1808"/>
+      <path d="M26,24 Q18,10 21,2 Q26,12 28,20 Z" fill="#6a1010"/>
+      <path d="M54,24 Q62,10 59,2 Q54,12 52,20 Z" fill="#6a1010"/>
+      <path d="M24,28 Q32,22 40,24 Q48,22 56,28" stroke="#6a1010" stroke-width="2" fill="none"/>
+      ${E(32,30,4,'#ff2000')}${E(48,30,4,'#ff2000')}
+      <ellipse cx="37" cy="38" rx="2" ry="3" fill="black"/>
+      <ellipse cx="43" cy="38" rx="2" ry="3" fill="black"/>
+      <path d="M24,44 Q32,54 40,56 Q48,54 56,44" fill="#1a0000"/>
+      <path d="M28,44 L26,52 L31,46 Z" fill="#c8b87a"/>
+      <path d="M35,47 L34,55 L38,49 Z" fill="#c8b87a"/>
+      <path d="M45,47 L46,55 L42,49 Z" fill="#c8b87a"/>
+      <path d="M52,44 L54,52 L49,46 Z" fill="#c8b87a"/>
+      <path d="M30,54 L32,62 L34,54 Z" fill="#c8b87a"/>
+      <path d="M43,54 L45,62 L47,54 Z" fill="#c8b87a"/>
+    </g>`;
+    // SKELETON WARRIOR
+    return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="14" ry="4" fill="#060606" opacity=".8"/>
+      <ellipse cx="33" cy="111" rx="7" ry="3" fill="#1a1208"/>
+      <ellipse cx="47" cy="111" rx="7" ry="3" fill="#1a1208"/>
+      <rect x="30" y="84" width="7" height="28" rx="3" fill="#c8b87a"/>
+      <rect x="43" y="84" width="7" height="28" rx="3" fill="#c8b87a"/>
+      <circle cx="33" cy="95" r="5" fill="#d4c88a"/>
+      <circle cx="47" cy="95" r="5" fill="#d4c88a"/>
+      <path d="M26,84 Q28,78 40,76 Q52,78 54,84 Q48,88 40,88 Q32,88 26,84 Z" fill="#c8b87a"/>
+      <line x1="40" y1="50" x2="40" y2="76" stroke="#d4c88a" stroke-width="3"/>
+      
+        <path d="M40,52 Q30,54 26,52" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M40,52 Q50,54 54,52" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,57 Q30,59 26,57" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M40,57 Q50,59 54,57" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,62 Q30,64 26,62" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M40,62 Q50,64 54,62" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,67 Q30,69 26,67" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M40,67 Q50,69 54,67" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,72 Q30,74 26,72" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M40,72 Q50,74 54,72" stroke="#c8b87a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      
+      <path d="M26,50 Q20,46 18,52 Q22,56 28,54 Z" fill="#c8b87a"/>
+      <path d="M54,50 Q60,46 62,52 Q58,56 52,54 Z" fill="#c8b87a"/>
+      <rect x="14" y="52" width="10" height="4" rx="2" fill="#c8b87a"/>
+      <rect x="8" y="54" width="6" height="24" rx="3" fill="#c8b87a"/>
+      <path d="M2,52 L2,76 Q2,84 10,88 Q18,84 18,76 L18,52 Z" fill="#2a1a0a" stroke="#6a5020" stroke-width="1.5"/>
+      <line x1="10" y1="52" x2="10" y2="86" stroke="#6a5020" stroke-width="1" opacity=".6"/>
+      <path d="M4,64 L16,64" stroke="#6a5020" stroke-width="1" opacity=".6"/>
+      <rect x="56" y="52" width="10" height="4" rx="2" fill="#c8b87a"/>
+      <rect x="64" y="54" width="6" height="24" rx="3" fill="#c8b87a"/>
+      <rect x="66" y="18" width="5" height="48" rx="2" fill="#5a3a1a"/>
+      <rect x="66" y="18" width="5" height="48" rx="2" fill="#8a6a3a" opacity=".5"/>
+      <rect x="58" y="58" width="21" height="4" rx="2" fill="#5a3a1a"/>
+      <circle cx="68" cy="67" r="4" fill="#3a2010"/>
+      <line x1="68" y1="20" x2="69" y2="55" stroke="#6a4020" stroke-width="1" opacity=".6"/>
+      <ellipse cx="40" cy="36" rx="14" ry="16" fill="#c8b87a"/>
+      <path d="M30,44 Q30,54 40,56 Q50,54 50,44" fill="#c8b87a"/>
+      <path d="M36,22 Q38,28 36,34" stroke="#2a2010" stroke-width="1.2" fill="none"/>
+      <ellipse cx="34" cy="35" rx="6" ry="7" fill="#0a0805"/>
+      <ellipse cx="46" cy="35" rx="6" ry="7" fill="#0a0805"/>
+      ${E(34,35,3,'#cc1000')}${E(46,35,3,'#cc1000')}
+      <path d="M38,44 L40,42 L42,44" stroke="#2a2010" stroke-width="1.5" fill="none"/>
+      <rect x="31" y="51" width="2" height="4" rx="1" fill="#d4c88a"/><rect x="34" y="51" width="2" height="4" rx="1" fill="#d4c88a"/><rect x="37" y="51" width="2" height="4" rx="1" fill="#d4c88a"/><rect x="40" y="51" width="2" height="4" rx="1" fill="#d4c88a"/><rect x="43" y="51" width="2" height="4" rx="1" fill="#d4c88a"/><rect x="46" y="51" width="2" height="4" rx="1" fill="#d4c88a"/>
+    </g>`;
+  }
 
-    // Stage 3: War Titan / Siege Behemoth
-    3: `<g ${sc}>
-      <!-- Shadow -->
-      <ellipse cx="40" cy="108" rx="24" ry="5" fill="${c2}" opacity="0.4"/>
-      <!-- Feet/boots -->
-      <rect x="20" y="100" width="16" height="8" rx="2" fill="${c2}"/>
-      <rect x="44" y="100" width="16" height="8" rx="2" fill="${c2}"/>
-      <!-- Legs -->
-      <rect x="22" y="78" width="14" height="24" rx="4" fill="${c1}"/>
-      <rect x="44" y="78" width="14" height="24" rx="4" fill="${c1}"/>
-      <!-- Spiked knees -->
-      <path d="M22,88 L14,84 L22,80 Z" fill="${c3}"/>
-      <path d="M58,88 L66,84 L58,80 Z" fill="${c3}"/>
-      <!-- Body — armored war titan -->
-      <rect x="16" y="46" width="48" height="36" rx="6" fill="${c1}"/>
-      <!-- Chest plate -->
-      <rect x="22" y="50" width="36" height="28" rx="4" fill="${c2}" opacity="0.6"/>
-      <!-- War emblem -->
-      <path d="M40,54 L44,62 L52,62 L46,67 L48,75 L40,70 L32,75 L34,67 L28,62 L36,62 Z" fill="${c3}" opacity="0.8"/>
-      <!-- Pauldrons — spiked -->
-      <path d="M2,44 L16,42 L18,60 L4,62 Z" fill="${c1}"/>
-      <path d="M78,44 L64,42 L62,60 L76,62 Z" fill="${c1}"/>
-      <!-- Shoulder spikes -->
-      <line x1="4" y1="44" x2="-4" y2="30" stroke="${c3}" stroke-width="3"/>
-      <line x1="10" y1="42" x2="4" y2="26" stroke="${c3}" stroke-width="3"/>
-      <line x1="76" y1="44" x2="84" y2="30" stroke="${c3}" stroke-width="3"/>
-      <line x1="70" y1="42" x2="76" y2="26" stroke="${c3}" stroke-width="3"/>
-      <!-- Arms -->
-      <rect x="2" y="48" width="12" height="6" rx="3" fill="${c1}"/>
-      <rect x="66" y="48" width="12" height="6" rx="3" fill="${c1}"/>
-      <!-- Massive war hammer (right) -->
-      <rect x="74" y="54" width="6" height="50" rx="3" fill="#806040"/>
-      <rect x="66" y="50" width="22" height="14" rx="4" fill="${c1}"/>
-      <rect x="68" y="52" width="18" height="10" rx="3" fill="${c3}" opacity="0.6"/>
-      <!-- Tower shield (left) -->
-      <path d="M-2,42 L-2,90 Q-2,100 10,104 Q22,100 22,90 L22,42 Z" fill="${c1}" stroke="${c3}" stroke-width="1.5"/>
-      <line x1="10" y1="44" x2="10" y2="102" stroke="${c3}" stroke-width="1.5" opacity="0.5"/>
-      <!-- Neck -->
-      <rect x="32" y="36" width="16" height="14" rx="4" fill="${c1}"/>
-      <!-- Horned helmet -->
-      <path d="M18,40 Q18,22 40,18 Q62,22 62,40 L62,50 L18,50 Z" fill="${c1}"/>
-      <rect x="20" y="44" width="40" height="4" rx="2" fill="${c2}" opacity="0.7"/>
-      <!-- Visor -->
-      <rect x="24" y="38" width="32" height="4" rx="1" fill="#100000"/>
-      <!-- War horns -->
-      <path d="M22,22 Q10,10 12,0 Q20,10 24,18 Z" fill="${c1}"/>
-      <path d="M58,22 Q70,10 68,0 Q60,10 56,18 Z" fill="${c1}"/>
-    </g>`,
+  // ── Stage 2: Corrupt Dark Knight (v<2) | Fetish Witch Doctor (v≥2) ────────
+  if (stage === 2) {
+    if (v < 2) return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="18" ry="5" fill="#080308" opacity=".8"/>
+      <rect x="27" y="104" width="13" height="9" rx="2" fill="#0e080e"/>
+      <rect x="40" y="104" width="13" height="9" rx="2" fill="#0e080e"/>
+      <line x1="27" y1="112" x2="20" y2="116" stroke="#6a2060" stroke-width="2"/>
+      <line x1="40" y1="112" x2="34" y2="116" stroke="#6a2060" stroke-width="2"/>
+      <rect x="28" y="84" width="12" height="22" rx="4" fill="#1a0818"/>
+      <rect x="40" y="84" width="12" height="22" rx="4" fill="#1a0818"/>
+      <path d="M28,92 L20,88 L28,86 Z" fill="#6a2060"/>
+      <path d="M52,92 L60,88 L52,86 Z" fill="#6a2060"/>
+      <rect x="18" y="50" width="44" height="38" rx="6" fill="#16081a"/>
+      <path d="M40,58 L43,65 L51,65 L44,70 L47,78 L40,73 L33,78 L36,70 L29,65 L37,65 Z" fill="#3a0830" opacity=".9"/>
+      <path d="M40,60 L43,65 L50,65 L44,69 L47,76 L40,72 L33,76 L36,69 L30,65 L37,65 Z" fill="#cc00aa" opacity=".35"/>
+      <path d="M4,48 L18,46 L20,64 L6,64 Z" fill="#1a0818"/>
+      <path d="M76,48 L62,46 L60,64 L74,64 Z" fill="#1a0818"/>
+      <line x1="6" y1="48" x2="0" y2="36" stroke="#6a2060" stroke-width="2.5"/>
+      <line x1="12" y1="46" x2="6" y2="32" stroke="#6a2060" stroke-width="2"/>
+      <line x1="74" y1="48" x2="80" y2="36" stroke="#6a2060" stroke-width="2.5"/>
+      <line x1="68" y1="46" x2="74" y2="32" stroke="#6a2060" stroke-width="2"/>
+      <rect x="4" y="52" width="12" height="5" rx="2" fill="#1a0818"/>
+      <rect x="64" y="52" width="12" height="5" rx="2" fill="#1a0818"/>
+      <rect x="68" y="14" width="7" height="60" rx="3" fill="#1a0818"/>
+      <rect x="69" y="14" width="5" height="60" rx="2" fill="#3a1040" opacity=".8"/>
+      <line x1="71" y1="16" x2="72" y2="68" stroke="#cc00aa" stroke-width="1" opacity=".7"/>
+      <rect x="58" y="64" width="26" height="5" rx="2" fill="#1a0818"/>
+      <circle cx="71" cy="75" r="5" fill="#2a0828"/>
+      <circle cx="71" cy="75" r="3" fill="#cc00aa" opacity=".5"/>
+      <path d="M2,50 L2,76 Q2,86 12,90 Q22,86 22,76 L22,50 Z" fill="#1a0818" stroke="#6a2060" stroke-width="1.5"/>
+      <path d="M12,52 L12,88" stroke="#6a2060" stroke-width="1" opacity=".5"/>
+      <rect x="16" y="84" width="48" height="5" rx="2" fill="#0e0810"/>
+      <rect x="33" y="40" width="14" height="14" rx="4" fill="#160816"/>
+      <path d="M20,44 Q20,28 40,24 Q60,28 60,44 L60,54 L20,54 Z" fill="#16081a"/>
+      <rect x="20" y="48" width="40" height="4" rx="2" fill="#0e0810"/>
+      <rect x="24" y="42" width="32" height="4" rx="1" fill="#0a0208"/>
+      <rect x="26" y="43" width="28" height="2" rx="1" fill="#cc00aa" opacity=".8"/>
+      <path d="M24,28 Q14,12 16,2 Q22,14 26,24 Z" fill="#2a0828"/>
+      <path d="M56,28 Q66,12 64,2 Q58,14 54,24 Z" fill="#2a0828"/>
+    </g>`;
+    return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="14" ry="4" fill="#030a03" opacity=".7"/>
+      <path d="M28,74 Q22,94 24,113 L56,113 Q58,94 52,74 Z" fill="#0a1404"/>
+      <ellipse cx="40" cy="68" rx="14" ry="18" fill="#0c1a06"/>
+      <circle cx="28" cy="52" r="2.5" fill="#c8b87a"/>
+        <line x1="28" y1="49" x2="30" y2="44" stroke="#c8b87a" stroke-width="1"/><circle cx="34" cy="52" r="2.5" fill="#c8b87a"/>
+        <line x1="34" y1="49" x2="36" y2="44" stroke="#c8b87a" stroke-width="1"/><circle cx="40" cy="52" r="2.5" fill="#c8b87a"/>
+        <line x1="40" y1="49" x2="42" y2="44" stroke="#c8b87a" stroke-width="1"/><circle cx="46" cy="52" r="2.5" fill="#c8b87a"/>
+        <line x1="46" y1="49" x2="48" y2="44" stroke="#c8b87a" stroke-width="1"/><circle cx="52" cy="52" r="2.5" fill="#c8b87a"/>
+        <line x1="52" y1="49" x2="54" y2="44" stroke="#c8b87a" stroke-width="1"/>
+      <path d="M26,56 Q10,52 6,42 Q12,40 18,50 Q20,54 26,60 Z" fill="#0c1a06"/>
+      <path d="M54,56 Q70,52 74,42 Q68,40 62,50 Q60,54 54,60 Z" fill="#0c1a06"/>
+      <rect x="72" y="12" width="4" height="34" rx="2" fill="#3a2010"/>
+      <path d="M70,10 Q74,4 78,10 Z" fill="#8a6030"/>
+      <rect x="66" y="38" width="16" height="3" rx="1" fill="#5a3a18"/>
+      <line x1="74" y1="14" x2="74" y2="40" stroke="#30ff30" stroke-width="1" opacity=".6"/>
+      <ellipse cx="40" cy="36" rx="14" ry="15" fill="#c8b87a"/>
+      <path d="M28,26 Q22,14 26,6 Q28,16 30,24 Z" fill="#8a7050"/>
+      <path d="M52,26 Q58,14 54,6 Q52,16 50,24 Z" fill="#8a7050"/>
+      <ellipse cx="34" cy="34" rx="5" ry="6" fill="#060804"/>
+      <ellipse cx="46" cy="34" rx="5" ry="6" fill="#060804"/>
+      ${E(34,34,3,'#20ff20')}${E(46,34,3,'#20ff20')}
+      <path d="M38,42 L40,40 L42,42" stroke="#8a7050" stroke-width="1.5" fill="none"/>
+      <rect x="31" y="48" width="2.5" height="5" rx="1" fill="#d4c88a"/><rect x="34.5" y="48" width="2.5" height="5" rx="1" fill="#d4c88a"/><rect x="38" y="48" width="2.5" height="5" rx="1" fill="#d4c88a"/><rect x="41.5" y="48" width="2.5" height="5" rx="1" fill="#d4c88a"/><rect x="45" y="48" width="2.5" height="5" rx="1" fill="#d4c88a"/>
+      <rect x="2" y="20" width="5" height="90" rx="2" fill="#3a2008"/>
+      <ellipse cx="4" cy="18" rx="7" ry="8" fill="#c8b87a"/>
+      <ellipse cx="2" cy="20" rx="3" ry="3" fill="#060804"/>
+      <ellipse cx="6" cy="20" rx="3" ry="3" fill="#060804"/>
+      ${E(2,20,1.5,'#ff2000')}${E(6,20,1.5,'#ff2000')}
+    </g>`;
+  }
 
-    // Stage 4: Cosmic Horror
-    4: `<g ${sc}>
-      <!-- Outer glow -->
-      <ellipse cx="40" cy="64" rx="32" ry="36" fill="${c1}" opacity="0.08"/>
-      <!-- Tentacles -->
-      <path d="M14,90 Q2,100 4,112 Q10,104 16,96 Z" fill="${c1}" opacity="0.7"/>
-      <path d="M20,96 Q8,110 12,120 Q18,110 22,100 Z" fill="${c1}" opacity="0.6"/>
-      <path d="M66,90 Q78,100 76,112 Q70,104 64,96 Z" fill="${c1}" opacity="0.7"/>
-      <path d="M60,96 Q72,110 68,120 Q62,110 58,100 Z" fill="${c1}" opacity="0.6"/>
-      <!-- Body — void sphere -->
-      <ellipse cx="40" cy="68" rx="26" ry="30" fill="${c2}"/>
-      <ellipse cx="40" cy="66" rx="22" ry="26" fill="${c1}" opacity="0.5"/>
-      <!-- Stars on body -->
-      ${Array.from({length:8},(_,i)=>`<circle cx="${20+i*7}" cy="${54+Math.sin(i)*12}" r="1" fill="${c3}" opacity="0.7"/>`).join('')}
-      <!-- Upper tentacles -->
-      <path d="M24,46 Q12,30 10,14 Q18,28 22,42 Z" fill="${c1}" opacity="0.8"/>
-      <path d="M56,46 Q68,30 70,14 Q62,28 58,42 Z" fill="${c1}" opacity="0.8"/>
-      <path d="M34,40 Q30,18 34,4 Q38,20 38,36 Z" fill="${c1}" opacity="0.7"/>
-      <path d="M46,40 Q50,18 46,4 Q42,20 42,36 Z" fill="${c1}" opacity="0.7"/>
-      <!-- Giant central eye -->
-      <ellipse cx="40" cy="62" rx="16" ry="14" fill="white"/>
-      <ellipse cx="40" cy="62" rx="12" ry="10" fill="${c1}"/>
-      <circle cx="40" cy="62" r="7" fill="${c2}"/>
-      <circle cx="40" cy="62" r="4" fill="black"/>
-      <circle cx="37" cy="59" r="2" fill="white" opacity="0.6"/>
-      <!-- Pupil slit -->
-      <rect x="38.5" y="56" width="3" height="12" rx="1.5" fill="black"/>
-      <!-- Small eyes -->
-      ${b ? `
-        <circle cx="22" cy="50" r="5" fill="white"/><circle cx="22" cy="50" r="3" fill="${c1}"/><circle cx="22" cy="50" r="1.5" fill="black"/>
-        <circle cx="58" cy="50" r="5" fill="white"/><circle cx="58" cy="50" r="3" fill="${c1}"/><circle cx="58" cy="50" r="1.5" fill="black"/>
-      ` : `
-        <circle cx="24" cy="52" r="3" fill="white"/><circle cx="24" cy="52" r="1.5" fill="${c2}"/>
-        <circle cx="56" cy="52" r="3" fill="white"/><circle cx="56" cy="52" r="1.5" fill="${c2}"/>
-      `}
-      <!-- Mouth — toothed maw -->
-      <path d="M26,76 Q40,88 54,76" fill="${c2}"/>
-      ${[0,1,2,3,4].map(i=>`<line x1="${27+i*5}" y1="76" x2="${29+i*5}" y2="84" stroke="${c3}" stroke-width="2"/>`).join('')}
-    </g>`,
+  // ── Stage 3: Balrog / Pit Lord (v<2) | Bone Colossus (v≥2) ──────────────
+  if (stage === 3) {
+    if (v < 2) return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="22" ry="5" fill="#100000" opacity=".8"/>
+      <path d="M48,90 Q72,100 76,112 Q64,104 56,94 Z" fill="#2a0a00"/>
+      <rect x="24" y="80" width="14" height="30" rx="5" fill="#2a0800"/>
+      <rect x="42" y="80" width="14" height="30" rx="5" fill="#2a0800"/>
+      <ellipse cx="31" cy="112" rx="10" ry="4" fill="#1a0400"/>
+      <ellipse cx="49" cy="112" rx="10" ry="4" fill="#1a0400"/>
+      <line x1="28" y1="85" x2="26" y2="105" stroke="#ff4000" stroke-width="1" opacity=".7"/>
+      <line x1="46" y1="85" x2="48" y2="105" stroke="#ff4000" stroke-width="1" opacity=".7"/>
+      <rect x="14" y="44" width="52" height="40" rx="8" fill="#2a0800"/>
+      <ellipse cx="40" cy="64" rx="16" ry="14" fill="#3a1000" opacity=".6"/>
+      <path d="M34,58 Q40,50 46,58 Q44,64 40,66 Q36,64 34,58 Z" fill="#ff4000" opacity=".5"/>
+      <path d="M36,60 Q40,54 44,60 Q42,64 40,65 Q38,64 36,60 Z" fill="#ff8000" opacity=".6"/>
+      <path d="M0,42 L14,40 L16,58 L2,60 Z" fill="#2a0808"/>
+      <path d="M80,42 L66,40 L64,58 L78,60 Z" fill="#2a0808"/>
+      <line x1="2" y1="42" x2="-6" y2="26" stroke="#602010" stroke-width="3"/>
+      <line x1="8" y1="40" x2="2" y2="22" stroke="#602010" stroke-width="2.5"/>
+      <line x1="78" y1="42" x2="86" y2="26" stroke="#602010" stroke-width="3"/>
+      <line x1="72" y1="40" x2="78" y2="22" stroke="#602010" stroke-width="2.5"/>
+      <rect x="0" y="46" width="12" height="6" rx="3" fill="#2a0808"/>
+      <rect x="68" y="46" width="12" height="6" rx="3" fill="#2a0808"/>
+      <rect x="-8" y="18" width="6" height="50" rx="3" fill="#4a2808"/>
+      <path d="M-14,14 Q-10,4 -4,8 Q-2,18 -2,28 L-14,28 Z" fill="#6a4010"/>
+      <path d="M-14,32 Q-10,42 -4,38 Q-2,28 -2,18 L-14,18 Z" fill="#6a4010"/>
+      <path d="M-8,12 Q-4,6 0,12 Q-2,18 -6,16 Z" fill="#ff6000" opacity=".7"/>
+      <rect x="74" y="10" width="7" height="56" rx="3" fill="#3a1800"/>
+      <rect x="74" y="10" width="7" height="56" rx="3" fill="#ff4000" opacity=".2"/>
+      <path d="M74,10 Q78,2 82,10 Q80,18 76,16 Z" fill="#ff6000" opacity=".7"/>
+      <line x1="78" y1="12" x2="78" y2="58" stroke="#ff8000" stroke-width="1" opacity=".6"/>
+      <rect x="66" y="58" width="23" height="5" rx="2" fill="#3a1800"/>
+      <rect x="12" y="80" width="56" height="6" rx="3" fill="#1a0400"/>
+      <rect x="32" y="34" width="16" height="14" rx="5" fill="#2a0800"/>
+      <path d="M18,38 Q18,18 40,14 Q62,18 62,38 L62,50 L18,50 Z" fill="#2a0800"/>
+      <path d="M22,22 Q4,6 6,-6 Q14,8 20,18 Z" fill="#3a1000"/>
+      <path d="M58,22 Q76,6 74,-6 Q66,8 60,18 Z" fill="#3a1000"/>
+      <path d="M28,18 Q22,8 24,2 Q28,10 30,16 Z" fill="#5a1808"/>
+      <path d="M52,18 Q58,8 56,2 Q52,10 50,16 Z" fill="#5a1808"/>
+      <rect x="22" y="36" width="36" height="8" rx="2" fill="#100400"/>
+      ${E(31,39,5,'#ff3000')}${E(49,39,5,'#ff3000')}
+      <path d="M24,46 Q32,58 40,60 Q48,58 56,46" fill="#1a0400"/>
+      <path d="M30,48 L28,58 L34,50 Z" fill="#c8b87a"/>
+      <path d="M38,50 L37,60 L42,52 Z" fill="#c8b87a"/>
+      <path d="M50,48 L52,58 L46,50 Z" fill="#c8b87a"/>
+    </g>`;
+    // BONE COLOSSUS
+    return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="22" ry="5" fill="#050505" opacity=".8"/>
+      <rect x="22" y="78" width="16" height="34" rx="5" fill="#b0a06a"/>
+      <rect x="42" y="78" width="16" height="34" rx="5" fill="#b0a06a"/>
+      <circle cx="30" cy="92" r="8" fill="#c8b87a"/>
+      <circle cx="50" cy="92" r="8" fill="#c8b87a"/>
+      <path d="M20,78 Q24,70 40,68 Q56,70 60,78 Q52,84 40,84 Q28,84 20,78 Z" fill="#b0a06a"/>
+      <line x1="40" y1="42" x2="40" y2="68" stroke="#c8b87a" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="40" cy="46" rx="7" ry="3" fill="#d4c888"/><ellipse cx="40" cy="52" rx="7" ry="3" fill="#d4c888"/><ellipse cx="40" cy="58" rx="7" ry="3" fill="#d4c888"/><ellipse cx="40" cy="64" rx="7" ry="3" fill="#d4c888"/>
+      
+        <path d="M40,44 Q24,47 18,44" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M40,44 Q56,47 62,44" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,49 Q24,52 18,49" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M40,49 Q56,52 62,49" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,54 Q24,57 18,54" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M40,54 Q56,57 62,54" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,59 Q24,62 18,59" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M40,59 Q56,62 62,59" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,64 Q24,67 18,64" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M40,64 Q56,67 62,64" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      
+        <path d="M40,69 Q24,72 18,69" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M40,69 Q56,72 62,69" stroke="#c8b87a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      
+      <ellipse cx="14" cy="44" rx="10" ry="7" fill="#b0a06a"/>
+      <ellipse cx="66" cy="44" rx="10" ry="7" fill="#b0a06a"/>
+      <rect x="2" y="46" width="10" height="4" rx="2" fill="#c8b87a"/>
+      <rect x="68" y="46" width="10" height="4" rx="2" fill="#c8b87a"/>
+      <rect x="0" y="48" width="8" height="22" rx="4" fill="#c8b87a"/>
+      <rect x="72" y="48" width="8" height="22" rx="4" fill="#c8b87a"/>
+      ${CL(0,70,-6,65)}${CL(0,70,-6,72)}${CL(0,70,-4,78)}
+      ${CL(80,70,86,65)}${CL(80,70,86,72)}${CL(80,70,84,78)}
+      <ellipse cx="40" cy="28" rx="18" ry="20" fill="#b0a06a"/>
+      <path d="M34,10 Q36,20 34,28" stroke="#4a3820" stroke-width="1.5" fill="none"/>
+      <path d="M44,14 Q45,22 43,30" stroke="#4a3820" stroke-width="1" fill="none"/>
+      <ellipse cx="30" cy="26" rx="8" ry="9" fill="#0a0804"/>
+      <ellipse cx="50" cy="26" rx="8" ry="9" fill="#0a0804"/>
+      ${E(30,26,4.5,'#dd1000')}${E(50,26,4.5,'#dd1000')}
+      <path d="M36,36 Q40,33 44,36" stroke="#4a3820" stroke-width="2" fill="none"/>
+      <path d="M26,38 Q26,48 40,52 Q54,48 54,38" fill="#b0a06a"/>
+      <rect x="27" y="46" width="3" height="7" rx="1" fill="#d4c888"/><rect x="31" y="46" width="3" height="7" rx="1" fill="#d4c888"/><rect x="35" y="46" width="3" height="7" rx="1" fill="#d4c888"/><rect x="39" y="46" width="3" height="7" rx="1" fill="#d4c888"/><rect x="43" y="46" width="3" height="7" rx="1" fill="#d4c888"/><rect x="47" y="46" width="3" height="7" rx="1" fill="#d4c888"/><rect x="51" y="46" width="3" height="7" rx="1" fill="#d4c888"/>
+    </g>`;
+  }
 
-    // Stage 5: Reality Fragment / Divine Construct
-    5: `<g ${sc}>
-      <!-- Outer shards -->
-      <path d="M10,30 L20,50 L6,60 Z" fill="${c1}" opacity="0.4"/>
-      <path d="M70,30 L60,50 L74,60 Z" fill="${c1}" opacity="0.4"/>
-      <path d="M30,10 L38,30 L20,24 Z" fill="${c1}" opacity="0.3"/>
-      <path d="M50,10 L42,30 L60,24 Z" fill="${c1}" opacity="0.3"/>
-      <!-- Core body — geometric crystal -->
-      <path d="M40,18 L64,48 L56,88 L24,88 L16,48 Z" fill="${c2}" opacity="0.7"/>
-      <path d="M40,18 L64,48 L56,88 L24,88 L16,48 Z" fill="${c1}" opacity="0.3"/>
-      <!-- Crystal facets -->
-      <line x1="40" y1="18" x2="56" y2="88" stroke="${c3}" stroke-width="0.5" opacity="0.6"/>
-      <line x1="40" y1="18" x2="24" y2="88" stroke="${c3}" stroke-width="0.5" opacity="0.6"/>
-      <line x1="16" y1="48" x2="64" y2="48" stroke="${c3}" stroke-width="0.5" opacity="0.6"/>
-      <line x1="16" y1="68" x2="64" y2="68" stroke="${c3}" stroke-width="0.5" opacity="0.4"/>
-      <!-- Eyes — two glowing cores -->
-      <circle cx="34" cy="46" r="6" fill="${c3}" opacity="0.8"/>
-      <circle cx="46" cy="46" r="6" fill="${c3}" opacity="0.8"/>
-      <circle cx="34" cy="46" r="3" fill="white"/>
-      <circle cx="46" cy="46" r="3" fill="white"/>
-      <!-- Central rune -->
-      <text x="32" y="66" font-size="14" fill="${c3}" font-family="serif">✦</text>
-      <!-- Arms — crystalline blades -->
-      <path d="M16,50 L0,36 L4,50 L0,64 L16,50 Z" fill="${c1}" opacity="0.8"/>
-      <path d="M64,50 L80,36 L76,50 L80,64 L64,50 Z" fill="${c1}" opacity="0.8"/>
-      <!-- Crown spire -->
-      <path d="M34,18 L38,4 L40,14 L42,4 L46,18 Z" fill="${c3}" opacity="0.9"/>
-      <!-- Floating shards -->
-      <rect x="8" y="22" width="8" height="8" fill="${c1}" opacity="0.5" transform="rotate(30 12 26)"/>
-      <rect x="64" y="22" width="8" height="8" fill="${c1}" opacity="0.5" transform="rotate(-30 68 26)"/>
-    </g>`,
+  // ── Stage 4: Lesser Prime Evil (v<2) | Corrupted Ancient (v≥2) ───────────
+  if (stage === 4) {
+    if (v < 2) return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="18" ry="5" fill="#0a0010" opacity=".8"/>
+      <path d="M46,90 Q66,104 68,118 Q58,108 52,96 Z" fill="#1a0030"/>
+      <rect x="26" y="80" width="13" height="30" rx="5" fill="#120020"/>
+      <rect x="41" y="80" width="13" height="30" rx="5" fill="#120020"/>
+      <line x1="29" y1="82" x2="27" y2="104" stroke="#8000ff" stroke-width="1" opacity=".8"/>
+      <line x1="44" y1="82" x2="46" y2="104" stroke="#8000ff" stroke-width="1" opacity=".8"/>
+      <rect x="16" y="46" width="48" height="38" rx="7" fill="#12001e"/>
+      <circle cx="40" cy="65" r="14" fill="#0a0018"/>
+      <circle cx="40" cy="65" r="10" fill="#180030"/>
+      <circle cx="40" cy="65" r="6" fill="#2a0050"/>
+      <circle cx="40" cy="65" r="3" fill="#8000ff" opacity=".7"/>
+      <ellipse cx="40" cy="65" rx="20" ry="6" fill="none" stroke="#6000cc" stroke-width="1" opacity=".5" transform="rotate(30 40 65)"/>
+      <path d="M0,44 L16,42 L18,60 L2,62 Z" fill="#12001e"/>
+      <path d="M80,44 L64,42 L62,60 L78,62 Z" fill="#12001e"/>
+      <line x1="4" y1="44" x2="-2" y2="32" stroke="#6000cc" stroke-width="2"/>
+      <line x1="8" y1="42" x2="2" y2="28" stroke="#6000cc" stroke-width="2"/>
+      <line x1="76" y1="44" x2="82" y2="32" stroke="#6000cc" stroke-width="2"/>
+      <line x1="72" y1="42" x2="78" y2="28" stroke="#6000cc" stroke-width="2"/>
+      <rect x="0" y="48" width="14" height="6" rx="3" fill="#12001e"/>
+      <rect x="66" y="48" width="14" height="6" rx="3" fill="#12001e"/>
+      ${CL(-2,52,-10,46)}${CL(-2,54,-10,54)}${CL(-2,56,-10,62)}${CL(-2,58,-8,66)}
+      ${CL(82,52,90,46)}${CL(82,54,90,54)}${CL(82,56,90,62)}${CL(82,58,88,66)}
+      <rect x="14" y="80" width="52" height="5" rx="2" fill="#0c0018"/>
+      <rect x="34" y="36" width="12" height="14" rx="4" fill="#120020"/>
+      <ellipse cx="40" cy="24" rx="16" ry="18" fill="#1a0030"/>
+      <path d="M26,14 Q22,2 24,-6 Q28,4 28,12 Z" fill="#3a0060"/>
+      <path d="M34,10 Q32,-4 34,-10 Q36,2 36,10 Z" fill="#3a0060"/>
+      <path d="M40,8 Q40,-6 40,-12 Q42,-4 42,8 Z" fill="#5000aa"/>
+      <path d="M46,10 Q48,-4 46,-10 Q44,2 44,10 Z" fill="#3a0060"/>
+      <path d="M54,14 Q58,2 56,-6 Q52,4 52,12 Z" fill="#3a0060"/>
+      <ellipse cx="32" cy="22" rx="7" ry="8" fill="#060010"/>
+      <ellipse cx="48" cy="22" rx="7" ry="8" fill="#060010"/>
+      ${E(32,22,4,'#8000ff')}${E(48,22,4,'#8000ff')}
+      <path d="M37,30 Q40,27 43,30" stroke="#2a0050" stroke-width="2" fill="none"/>
+      <path d="M26,32 Q26,44 40,48 Q54,44 54,32" fill="#12001e"/>
+      <path d="M30,34 L28,46 L34,36 Z" fill="#8060b0"/>
+      <path d="M38,35 L37,47 L42,37 Z" fill="#8060b0"/>
+      <path d="M50,34 L52,46 L46,36 Z" fill="#8060b0"/>
+    </g>`;
+    return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="20" ry="5" fill="#080408" opacity=".8"/>
+      <path d="M24,54 Q14,78 16,113 L30,113 Q26,86 32,68 Z" fill="#18041a" opacity=".9"/>
+      <path d="M56,54 Q66,78 64,113 L50,113 Q54,86 48,68 Z" fill="#18041a" opacity=".9"/>
+      <rect x="22" y="46" width="36" height="32" rx="6" fill="#1a0620"/>
+      <path d="M28,52 Q22,64 24,78" stroke="#9000aa" stroke-width="1.5" fill="none" opacity=".7"/>
+      <path d="M52,52 Q58,64 56,78" stroke="#9000aa" stroke-width="1.5" fill="none" opacity=".7"/>
+      <circle cx="40" cy="62" r="10" fill="#0e0418"/>
+      <text x="34" y="66" font-size="12" fill="#9000aa" opacity=".9" font-family="serif">⚕</text>
+      <path d="M22,52 Q6,48 2,36 Q10,36 16,46 Q18,50 22,54 Z" fill="#1a0620"/>
+      <path d="M58,52 Q74,48 78,36 Q70,36 64,46 Q62,50 58,54 Z" fill="#1a0620"/>
+      ${CL(2,36,-4,30)}${CL(2,36,-4,38)}${CL(2,36,0,44)}
+      ${CL(78,36,84,30)}${CL(78,36,84,38)}${CL(78,36,80,44)}
+      <ellipse cx="40" cy="30" rx="15" ry="17" fill="#c0a870"/>
+      <path d="M26,18 L28,6 L34,14 L40,2 L46,14 L52,6 L54,18 Z" fill="#2a0040"/>
+      <circle cx="31" cy="14" r="2.5" fill="#8000ff" opacity=".8"/>
+      <circle cx="40" cy="8" r="3" fill="#8000ff" opacity=".8"/>
+      <circle cx="49" cy="14" r="2.5" fill="#8000ff" opacity=".8"/>
+      <ellipse cx="32" cy="28" rx="6" ry="7" fill="#080408"/>
+      <ellipse cx="48" cy="28" rx="6" ry="7" fill="#080408"/>
+      ${E(32,28,3.5,'#cc00ff')}${E(48,28,3.5,'#cc00ff')}
+      <path d="M30,40 Q30,50 40,54 Q50,50 50,40" fill="#c0a870"/>
+      <rect x="31" y="47" width="2.5" height="6" rx="1" fill="#d4c888"/><rect x="34" y="47" width="2.5" height="6" rx="1" fill="#d4c888"/><rect x="37" y="47" width="2.5" height="6" rx="1" fill="#d4c888"/><rect x="40" y="47" width="2.5" height="6" rx="1" fill="#d4c888"/><rect x="43" y="47" width="2.5" height="6" rx="1" fill="#d4c888"/><rect x="46" y="47" width="2.5" height="6" rx="1" fill="#d4c888"/>
+    </g>`;
+  }
 
-    // Stage 6: Divine Absolute
-    6: `<g ${sc}>
-      <!-- Aura -->
-      <ellipse cx="40" cy="64" rx="36" ry="40" fill="${c1}" opacity="0.07"/>
-      <!-- Wings of fire -->
-      <path d="M20,50 Q-8,36 -12,54 Q-6,70 14,68 Q2,78 0,96 L18,80 Z" fill="${c1}" opacity="0.5"/>
-      <path d="M20,50 Q0,44 -4,56 Q0,66 16,64 Z" fill="${c3}" opacity="0.3"/>
-      <path d="M60,50 Q88,36 92,54 Q86,70 66,68 Q78,78 80,96 L62,80 Z" fill="${c1}" opacity="0.5"/>
-      <path d="M60,50 Q80,44 84,56 Q80,66 64,64 Z" fill="${c3}" opacity="0.3"/>
-      <!-- Legs -->
-      <rect x="26" y="82" width="12" height="24" rx="5" fill="${c2}"/>
-      <rect x="42" y="82" width="12" height="24" rx="5" fill="${c2}"/>
-      <!-- Body — armored absolute -->
-      <rect x="18" y="48" width="44" height="38" rx="7" fill="${c2}"/>
-      <ellipse cx="40" cy="66" rx="16" ry="16" fill="${c1}" opacity="0.4"/>
-      <!-- Chest seal -->
-      <circle cx="40" cy="66" r="10" fill="${c3}" opacity="0.2"/>
-      <circle cx="40" cy="66" r="6" fill="${c3}" opacity="0.4"/>
-      <circle cx="40" cy="66" r="3" fill="${c3}" opacity="0.8"/>
-      <!-- Multiple arms -->
-      <rect x="4" y="52" width="12" height="6" rx="3" fill="${c2}"/>
-      <rect x="64" y="52" width="12" height="6" rx="3" fill="${c2}"/>
-      <path d="M4,52 Q-6,40 -4,26 Q4,36 8,46 Z" fill="${c2}"/>
-      <path d="M76,52 Q86,40 84,26 Q76,36 72,46 Z" fill="${c2}"/>
-      <!-- Weapons — reality blades -->
-      <rect x="-8" y="20" width="5" height="40" rx="2.5" fill="${c3}" opacity="0.8"/>
-      <ellipse cx="-5" cy="20" rx="8" ry="4" fill="${c3}" opacity="0.6"/>
-      <rect x="83" y="20" width="5" height="40" rx="2.5" fill="${c3}" opacity="0.8"/>
-      <ellipse cx="86" cy="20" rx="8" ry="4" fill="${c3}" opacity="0.6"/>
-      <!-- Neck -->
-      <rect x="32" y="38" width="16" height="14" rx="5" fill="${c2}"/>
-      <!-- Head — divine mask -->
-      <ellipse cx="40" cy="28" rx="16" ry="18" fill="${c2}"/>
-      <!-- Crown -->
-      <path d="M26,18 L28,8 L34,16 L40,4 L46,16 L52,8 L54,18 Z" fill="${c3}" opacity="0.9"/>
-      <!-- Mask face -->
-      <rect x="26" y="24" width="28" height="6" rx="2" fill="#0a0000"/>
-      <rect x="28" y="25" width="10" height="4" rx="1" fill="${c3}" opacity="0.7"/>
-      <rect x="42" y="25" width="10" height="4" rx="1" fill="${c3}" opacity="0.7"/>
-    </g>`,
+  // ── Stage 5: Mephisto (v<2) | Soul Reaper (v≥2) ──────────────────────────
+  if (stage === 5) {
+    if (v < 2) return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="28" ry="5" fill="#0a0008" opacity=".8"/>
+      
+        <line x1="22" y1="86" x2="6" y2="72" stroke="#3a0050" stroke-width="3" stroke-linecap="round"/>
+      
+        <line x1="26" y1="92" x2="10" y2="86" stroke="#3a0050" stroke-width="3" stroke-linecap="round"/>
+      
+        <line x1="30" y1="98" x2="14" y2="102" stroke="#3a0050" stroke-width="3" stroke-linecap="round"/>
+      
+        <line x1="58" y1="86" x2="74" y2="72" stroke="#3a0050" stroke-width="3" stroke-linecap="round"/>
+      
+        <line x1="54" y1="92" x2="70" y2="86" stroke="#3a0050" stroke-width="3" stroke-linecap="round"/>
+      
+        <line x1="50" y1="98" x2="66" y2="102" stroke="#3a0050" stroke-width="3" stroke-linecap="round"/>
+      
+      <ellipse cx="40" cy="96" rx="22" ry="16" fill="#1e0030"/>
+      <ellipse cx="40" cy="94" rx="16" ry="12" fill="#2a0040"/>
+      <path d="M36,90 Q40,96 44,90 Q40,84 36,90 Z" fill="#cc0088" opacity=".6"/>
+      <rect x="24" y="48" width="32" height="32" rx="6" fill="#200030"/>
+      <path d="M24,54 Q6,44 0,28 Q8,36 16,48 Z" fill="#200030"/>
+      <path d="M56,54 Q74,44 80,28 Q72,36 64,48 Z" fill="#200030"/>
+      <path d="M24,62 Q4,60 -2,74 Q6,70 16,62 Z" fill="#200030"/>
+      <path d="M56,62 Q76,60 82,74 Q74,70 64,62 Z" fill="#200030"/>
+      ${CL(0,28,-6,20)}${CL(0,28,-6,28)}${CL(0,28,-4,36)}
+      ${CL(80,28,86,20)}${CL(80,28,86,28)}${CL(80,28,84,36)}
+      ${CL(-2,74,-8,68)}${CL(-2,74,-8,76)}${CL(-2,74,-6,82)}
+      ${CL(82,74,88,68)}${CL(82,74,88,76)}${CL(82,74,86,82)}
+      <rect x="33" y="36" width="14" height="16" rx="5" fill="#1a0028"/>
+      <ellipse cx="40" cy="22" rx="15" ry="18" fill="#200030"/>
+      <path d="M28,12 Q24,-2 26,-10 Q30,2 30,10 Z" fill="#4a0060"/>
+      <path d="M36,8 Q34,-6 36,-14 Q38,-2 38,8 Z" fill="#6a00aa"/>
+      <path d="M40,6 Q40,-8 40,-16 Q42,-6 42,6 Z" fill="#8000cc"/>
+      <path d="M44,8 Q46,-6 44,-14 Q42,-2 42,8 Z" fill="#6a00aa"/>
+      <path d="M52,12 Q56,-2 54,-10 Q50,2 50,10 Z" fill="#4a0060"/>
+      <ellipse cx="30" cy="20" rx="8" ry="9" fill="#080010"/>
+      <ellipse cx="50" cy="20" rx="8" ry="9" fill="#080010"/>
+      ${E(30,20,5,'#ff00cc')}${E(50,20,5,'#ff00cc')}
+      <line x1="40" y1="8" x2="40" y2="30" stroke="#6a00aa" stroke-width="1.5" opacity=".6"/>
+      <path d="M28,32 Q28,44 40,48 Q52,44 52,32" fill="#1a0028"/>
+      <path d="M30,34 L28,50 L34,36 Z" fill="#8060c0"/>
+      <path d="M37,35 L36,51 L41,37 Z" fill="#8060c0"/>
+      <path d="M50,34 L52,50 L46,36 Z" fill="#8060c0"/>
+      <circle cx="29" cy="52" r="1.5" fill="#cc0088" opacity=".7"/>
+      <circle cx="38" cy="53" r="1.5" fill="#cc0088" opacity=".7"/>
+    </g>`;
+    return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="12" ry="4" fill="#060308" opacity=".8"/>
+      <path d="M26,44 Q10,68 12,113 L28,113 Q22,80 30,60 Z" fill="#0e0418" opacity=".9"/>
+      <path d="M54,44 Q70,68 68,113 L52,113 Q58,80 50,60 Z" fill="#0e0418" opacity=".9"/>
+      <ellipse cx="40" cy="72" rx="16" ry="20" fill="#1a0428" opacity=".7"/>
+      <ellipse cx="40" cy="70" rx="10" ry="14" fill="#0e0220"/>
+      <circle cx="26" cy="62" r="3" fill="#cc00aa" opacity=".6"/><circle cx="40" cy="76" r="3" fill="#cc00aa" opacity=".6"/><circle cx="54" cy="62" r="3" fill="#cc00aa" opacity=".6"/>
+      <path d="M24,52 Q8,44 4,30 Q12,36 18,48 Z" fill="#1a0428"/>
+      <path d="M56,52 Q72,44 76,30 Q68,36 62,48 Z" fill="#1a0428"/>
+      <rect x="72" y="4" width="5" height="90" rx="2" fill="#1e100a"/>
+      <path d="M77,10 Q92,4 90,24 Q82,30 77,22 Z" fill="#2a1808"/>
+      <path d="M77,10 Q88,6 88,22 Q82,28 77,22 Z" fill="#6a4020"/>
+      <line x1="77" y1="10" x2="88" y2="20" stroke="#8a6030" stroke-width="1" opacity=".7"/>
+      <ellipse cx="40" cy="26" rx="14" ry="15" fill="#1a0820"/>
+      <ellipse cx="40" cy="22" rx="18" ry="10" fill="#0a0410" opacity=".9"/>
+      <ellipse cx="33" cy="24" rx="5" ry="5" fill="#060308"/>
+      <ellipse cx="47" cy="24" rx="5" ry="5" fill="#060308"/>
+      ${E(33,24,3,'#dd00aa')}${E(47,24,3,'#dd00aa')}
+      <path d="M30,34 Q30,42 40,44 Q50,42 50,34" fill="#1a0820" opacity=".6"/>
+      <path d="M33,40 L35,46 L37,40 Z" fill="#9080b0" opacity=".6"/>
+      <path d="M43,40 L45,46 L47,40 Z" fill="#9080b0" opacity=".6"/>
+    </g>`;
+  }
 
-    // Stage 7: End-of-all void entity
-    7: `<g ${sc}>
-      <!-- Swirling void -->
-      <ellipse cx="40" cy="64" rx="34" ry="36" fill="none" stroke="${c1}" stroke-width="0.5" opacity="0.2"/>
-      <ellipse cx="40" cy="64" rx="26" ry="28" fill="none" stroke="${c1}" stroke-width="0.8" opacity="0.3"/>
-      <!-- Void body -->
-      <ellipse cx="40" cy="64" rx="20" ry="36" fill="${c2}" opacity="0.8"/>
-      <!-- Dark core -->
-      <ellipse cx="40" cy="64" rx="12" ry="24" fill="#02020a"/>
-      <!-- Eye cluster — multiple void eyes -->
-      <circle cx="40" cy="50" r="10" fill="white" opacity="0.05"/>
-      <circle cx="40" cy="50" r="7" fill="white" opacity="0.1"/>
-      <circle cx="40" cy="50" r="4" fill="${c1}" opacity="0.7"/>
-      <circle cx="40" cy="50" r="2" fill="white"/>
-      <!-- Side eyes -->
-      <circle cx="28" cy="56" r="4" fill="${c1}" opacity="0.6"/><circle cx="28" cy="56" r="2" fill="white" opacity="0.8"/>
-      <circle cx="52" cy="56" r="4" fill="${c1}" opacity="0.6"/><circle cx="52" cy="56" r="2" fill="white" opacity="0.8"/>
-      <circle cx="32" cy="70" r="3" fill="${c1}" opacity="0.5"/><circle cx="32" cy="70" r="1.5" fill="white" opacity="0.7"/>
-      <circle cx="48" cy="70" r="3" fill="${c1}" opacity="0.5"/><circle cx="48" cy="70" r="1.5" fill="white" opacity="0.7"/>
-      <!-- Void tendrils -->
-      <path d="M20,44 Q4,30 2,14 Q12,28 18,42 Z" fill="${c1}" opacity="0.5"/>
-      <path d="M60,44 Q76,30 78,14 Q68,28 62,42 Z" fill="${c1}" opacity="0.5"/>
-      <path d="M22,80 Q6,88 2,104 Q14,92 22,80 Z" fill="${c1}" opacity="0.4"/>
-      <path d="M58,80 Q74,88 78,104 Q66,92 58,80 Z" fill="${c1}" opacity="0.4"/>
-      <!-- Mouth — void tear -->
-      <path d="M28,80 Q40,${b?96:90} 52,80" fill="${c2}" opacity="0.5"/>
-      <path d="M28,80 Q40,${b?96:90} 52,80" fill="none" stroke="${c1}" stroke-width="2"/>
-      <!-- Rune fragments -->
-      <text x="30" y="38" font-size="8" fill="${c1}" opacity="0.6" transform="rotate(-15 30 38)">✦</text>
-      <text x="46" y="44" font-size="6" fill="${c1}" opacity="0.5" transform="rotate(20 46 44)">◈</text>
-    </g>`
-  };
-  return monsters[stage] || monsters[1];
+  // ── Stage 6: Baal (v<2) | The Prime Terror (v≥2) ─────────────────────────
+  if (stage === 6) {
+    if (v < 2) return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="24" ry="5" fill="#0a0000" opacity=".9"/>
+      
+        <line x1="40" y1="96" x2="10" y2="110" stroke="#4a0808" stroke-width="4" stroke-linecap="round"/>
+      
+        <line x1="40" y1="96" x2="20" y2="116" stroke="#4a0808" stroke-width="4" stroke-linecap="round"/>
+      
+        <line x1="40" y1="96" x2="30" y2="118" stroke="#4a0808" stroke-width="4" stroke-linecap="round"/>
+      
+        <line x1="40" y1="96" x2="50" y2="118" stroke="#4a0808" stroke-width="4" stroke-linecap="round"/>
+      
+        <line x1="40" y1="96" x2="60" y2="116" stroke="#4a0808" stroke-width="4" stroke-linecap="round"/>
+      
+        <line x1="40" y1="96" x2="70" y2="110" stroke="#4a0808" stroke-width="4" stroke-linecap="round"/>
+      
+      <circle cx="10" cy="110" r="3" fill="#cc1010"/><circle cx="20" cy="116" r="3" fill="#cc1010"/><circle cx="70" cy="110" r="3" fill="#cc1010"/><circle cx="60" cy="116" r="3" fill="#cc1010"/>
+      <rect x="28" y="78" width="11" height="24" rx="5" fill="#280808"/>
+      <rect x="41" y="78" width="11" height="24" rx="5" fill="#280808"/>
+      <rect x="14" y="42" width="52" height="40" rx="8" fill="#220808"/>
+      <circle cx="40" cy="62" r="16" fill="#180408"/>
+      <path d="M40,48 L44,57 L54,57 L46,63 L50,73 L40,67 L30,73 L34,63 L26,57 L36,57 Z" fill="#8a0000" opacity=".7"/>
+      <path d="M40,50 L44,57 L52,57 L46,62 L49,70 L40,65 L31,70 L34,62 L28,57 L36,57 Z" fill="#ff2000" opacity=".3"/>
+      <path d="M14,46 Q-4,30 -8,10 Q2,24 8,40 Z" fill="#2a0808"/>
+      <path d="M14,58 Q-8,54 -12,72 Q-2,62 8,56 Z" fill="#2a0808"/>
+      <path d="M66,46 Q84,30 88,10 Q78,24 72,40 Z" fill="#2a0808"/>
+      <path d="M66,58 Q88,54 92,72 Q82,62 72,56 Z" fill="#2a0808"/>
+      ${CL(-8,10,-14,4)}${CL(-8,10,-12,12)}${CL(-8,10,-8,18)}
+      ${CL(-12,72,-18,66)}${CL(-12,72,-18,74)}${CL(-12,72,-14,80)}
+      ${CL(88,10,94,4)}${CL(88,10,92,12)}${CL(88,10,88,18)}
+      ${CL(92,72,98,66)}${CL(92,72,98,74)}${CL(92,72,94,80)}
+      <rect x="12" y="78" width="56" height="5" rx="2" fill="#180404"/>
+      <ellipse cx="18" cy="80" rx="4" ry="5" fill="#c0a860"/><circle cx="18" cy="78" r="1.5" fill="#cc1000"/><ellipse cx="29" cy="80" rx="4" ry="5" fill="#c0a860"/><circle cx="29" cy="78" r="1.5" fill="#cc1000"/><ellipse cx="40" cy="80" rx="4" ry="5" fill="#c0a860"/><circle cx="40" cy="78" r="1.5" fill="#cc1000"/><ellipse cx="51" cy="80" rx="4" ry="5" fill="#c0a860"/><circle cx="51" cy="78" r="1.5" fill="#cc1000"/><ellipse cx="62" cy="80" rx="4" ry="5" fill="#c0a860"/><circle cx="62" cy="78" r="1.5" fill="#cc1000"/>
+      <rect x="32" y="32" width="16" height="14" rx="5" fill="#220808"/>
+      <ellipse cx="40" cy="18" rx="16" ry="20" fill="#2a0808"/>
+      <path d="M26,8 Q18,-6 20,-14 Q26,-2 28,6 Z" fill="#4a0808"/>
+      <path d="M34,4 Q28,-12 30,-18 Q34,-4 34,4 Z" fill="#6a0000"/>
+      <path d="M40,2 Q40,-14 40,-20 Q42,-12 42,2 Z" fill="#880000"/>
+      <path d="M46,4 Q52,-12 50,-18 Q46,-4 46,4 Z" fill="#6a0000"/>
+      <path d="M54,8 Q62,-6 60,-14 Q54,-2 52,6 Z" fill="#4a0808"/>
+      <ellipse cx="30" cy="16" rx="8" ry="9" fill="#0a0000"/>
+      <ellipse cx="50" cy="16" rx="8" ry="9" fill="#0a0000"/>
+      ${E(30,16,5,'#ff1000')}${E(50,16,5,'#ff1000')}
+      <path d="M37,24 Q40,21 43,24" stroke="#4a0808" stroke-width="2" fill="none"/>
+      <path d="M26,28 Q26,40 40,44 Q54,40 54,28" fill="#220808"/>
+      <path d="M28,30 L26,44 L32,32 Z" fill="#8a6060"/>
+      <path d="M36,32 L35,46 L40,34 Z" fill="#8a6060"/>
+      <path d="M52,30 L54,44 L48,32 Z" fill="#8a6060"/>
+    </g>`;
+    return `<g ${sc}>
+      <ellipse cx="40" cy="113" rx="22" ry="5" fill="#080000" opacity=".9"/>
+      <path d="M20,52 Q-16,34 -20,52 Q-14,68 10,68 Q0,80 -2,100 L18,82 Z" fill="#2a0000" opacity=".6"/>
+      <path d="M60,52 Q96,34 100,52 Q94,68 70,68 Q80,80 82,100 L62,82 Z" fill="#2a0000" opacity=".6"/>
+      <rect x="26" y="80" width="12" height="30" rx="5" fill="#1e0000"/>
+      <rect x="42" y="80" width="12" height="30" rx="5" fill="#1e0000"/>
+      <rect x="16" y="44" width="48" height="40" rx="8" fill="#200000"/>
+      <line x1="40" y1="64" x2="70" y2="64" stroke="#8a0000" stroke-width="1" opacity=".4"/><line x1="40" y1="64" x2="61.21320343559643" y2="79.55634918610404" stroke="#8a0000" stroke-width="1" opacity=".4"/><line x1="40" y1="64" x2="40" y2="86" stroke="#8a0000" stroke-width="1" opacity=".4"/><line x1="40" y1="64" x2="18.786796564403577" y2="79.55634918610404" stroke="#8a0000" stroke-width="1" opacity=".4"/><line x1="40" y1="64" x2="10" y2="64" stroke="#8a0000" stroke-width="1" opacity=".4"/><line x1="40" y1="64" x2="18.78679656440357" y2="48.44365081389596" stroke="#8a0000" stroke-width="1" opacity=".4"/><line x1="40" y1="64" x2="39.99999999999999" y2="42" stroke="#8a0000" stroke-width="1" opacity=".4"/><line x1="40" y1="64" x2="61.21320343559642" y2="48.44365081389595" stroke="#8a0000" stroke-width="1" opacity=".4"/>
+      <circle cx="40" cy="64" r="12" fill="#120000"/>
+      <circle cx="40" cy="64" r="7" fill="#cc0000" opacity=".3"/>
+      <circle cx="40" cy="64" r="3" fill="#ff2000" opacity=".6"/>
+      <path d="M0,46 L16,44 L18,62 L2,64 Z" fill="#1e0000"/>
+      <path d="M80,46 L64,44 L62,62 L78,64 Z" fill="#1e0000"/>
+      <line x1="0" y1="46" x2="-8" y2="30" stroke="#8a0000" stroke-width="3"/>
+      <line x1="80" y1="46" x2="88" y2="30" stroke="#8a0000" stroke-width="3"/>
+      <rect x="0" y="50" width="14" height="6" rx="3" fill="#1e0000"/>
+      <rect x="66" y="50" width="14" height="6" rx="3" fill="#1e0000"/>
+      ${CL(-2,54,-8,46)}${CL(-2,54,-8,54)}${CL(-2,54,-6,62)}${CL(-2,54,-4,70)}
+      ${CL(82,54,88,46)}${CL(82,54,88,54)}${CL(82,54,86,62)}${CL(82,54,84,70)}
+      <rect x="33" y="34" width="14" height="14" rx="5" fill="#1e0000"/>
+      <ellipse cx="40" cy="20" rx="18" ry="20" fill="#1e0000"/>
+      <path d="M28,16 Q22,-2 29,14 Z" fill="#4a0000"/><path d="M34,12 Q32,-6 35,10 Z" fill="#4a0000"/><path d="M40,10 Q40,-8 41,8 Z" fill="#4a0000"/><path d="M46,12 Q48,-6 47,10 Z" fill="#4a0000"/><path d="M52,16 Q58,-2 53,14 Z" fill="#4a0000"/>
+      <ellipse cx="30" cy="18" rx="8" ry="9" fill="#060000"/>
+      <ellipse cx="50" cy="18" rx="8" ry="9" fill="#060000"/>
+      ${E(30,18,5,'#ff0000')}${E(50,18,5,'#ff0000')}
+      <path d="M24,32 Q24,44 40,48 Q56,44 56,32" fill="#180000"/>
+      <path d="M28,34 L26,48 L32,36 Z" fill="#6a4040"/>
+      <path d="M36,36 L35,50 L40,38 Z" fill="#6a4040"/>
+      <path d="M52,34 L54,48 L48,36 Z" fill="#6a4040"/>
+    </g>`;
+  }
+
+  // ── Stage 7: Void Destroyer (v<2) | The Final Horror (v≥2) ───────────────
+  if (v < 2) return `<g ${sc}>
+    <ellipse cx="40" cy="113" rx="24" ry="5" fill="#020208" opacity=".9"/>
+    <ellipse cx="40" cy="60" rx="34" ry="38" fill="none" stroke="#2020a0" stroke-width=".8" opacity=".3"/>
+    ${[0,1,2,3,4,5,6,7].map(i=>{
+      const a=i*Math.PI/4;
+      return `<path d="M40,60 Q${40+Math.cos(a+.3)*20},${60+Math.sin(a+.3)*24} ${40+Math.cos(a)*34},${60+Math.sin(a)*38}" stroke="#1a1a60" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    }).join('')}
+    <ellipse cx="40" cy="60" rx="22" ry="28" fill="#050510"/>
+    <ellipse cx="40" cy="58" rx="16" ry="22" fill="#02020a"/>
+    <circle cx="40" cy="54" r="8" fill="#010108"/>
+    <circle cx="40" cy="54" r="5" fill="#0a0a30" opacity=".8"/>
+    <circle cx="40" cy="54" r="3" fill="#2020a0" opacity=".6"/>
+    <circle cx="40" cy="54" r="1.5" fill="white" opacity=".9"/>
+    <circle cx="30" cy="48" r="5" fill="black"/><circle cx="30" cy="48" r="3" fill="white" opacity=".9"/>
+    <circle cx="50" cy="48" r="5" fill="black"/><circle cx="50" cy="48" r="3" fill="white" opacity=".9"/>
+    <circle cx="34" cy="62" r="3.5" fill="black"/><circle cx="34" cy="62" r="2" fill="white" opacity=".8"/>
+    <circle cx="46" cy="62" r="3.5" fill="black"/><circle cx="46" cy="62" r="2" fill="white" opacity=".8"/>
+    <circle cx="40" cy="70" r="3" fill="black"/><circle cx="40" cy="70" r="1.5" fill="white" opacity=".7"/>
+    <path d="M24,80 Q32,88 40,88 Q48,88 56,80" fill="#01010a"/>
+    <path d="M24,80 Q32,88 40,88 Q48,88 56,80" fill="none" stroke="#4040cc" stroke-width="1.5"/>
+    <line x1="26" y1="80" x2="27" y2="88" stroke="#c0c0e0" stroke-width="2"/><line x1="31" y1="80" x2="32" y2="88" stroke="#c0c0e0" stroke-width="2"/><line x1="36" y1="80" x2="37" y2="88" stroke="#c0c0e0" stroke-width="2"/><line x1="41" y1="80" x2="42" y2="88" stroke="#c0c0e0" stroke-width="2"/><line x1="46" y1="80" x2="47" y2="88" stroke="#c0c0e0" stroke-width="2"/><line x1="51" y1="80" x2="52" y2="88" stroke="#c0c0e0" stroke-width="2"/><line x1="56" y1="80" x2="57" y2="88" stroke="#c0c0e0" stroke-width="2"/>
+    <ellipse cx="40" cy="26" rx="16" ry="18" fill="#050510"/>
+    <path d="M28,12 L27,-22 L32,12 Z" fill="#1a1a60" opacity=".8"/><path d="M34,12 L35,-14 L38,12 Z" fill="#1a1a60" opacity=".8"/><path d="M40,12 L42,-10 L44,12 Z" fill="#1a1a60" opacity=".8"/><path d="M46,12 L49,-14 L50,12 Z" fill="#1a1a60" opacity=".8"/><path d="M52,12 L57,-22 L56,12 Z" fill="#1a1a60" opacity=".8"/>
+    ${E(30,24,4,'white')}${E(50,24,4,'white')}
+  </g>`;
+  return `<g ${sc}>
+    <ellipse cx="40" cy="113" rx="20" ry="5" fill="#020208" opacity=".9"/>
+    <ellipse cx="40" cy="60" rx="30" ry="36" fill="#030308" opacity=".9"/>
+    ${[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>{
+      const a=i*Math.PI/6, r=26+i%3*4;
+      return `<line x1="40" y1="60" x2="${40+Math.cos(a)*r}" y2="${60+Math.sin(a)*r}" stroke="#4040ff" stroke-width=".6" opacity=".4"/>`;
+    }).join('')}
+    <circle cx="40" cy="60" r="18" fill="#010110"/>
+    <circle cx="40" cy="60" r="12" fill="#02021a"/>
+    ${[[32,46],[48,46],[28,58],[52,58],[34,70],[46,70]].map(([x,y])=>`
+      <circle cx="${x}" cy="${y}" r="4" fill="black"/>
+      <circle cx="${x}" cy="${y}" r="2.5" fill="white" opacity=".85"/>
+    `).join('')}
+    <ellipse cx="40" cy="84" rx="14" ry="8" fill="#010110"/>
+    <path d="M26,84 Q40,96 54,84" fill="none" stroke="#4040ff" stroke-width="1.5"/>
+    <line x1="28" y1="84" x2="29" y2="92" stroke="#a0a0d0" stroke-width="2"/><line x1="34" y1="84" x2="35" y2="92" stroke="#a0a0d0" stroke-width="2"/><line x1="40" y1="84" x2="41" y2="92" stroke="#a0a0d0" stroke-width="2"/><line x1="46" y1="84" x2="47" y2="92" stroke="#a0a0d0" stroke-width="2"/><line x1="52" y1="84" x2="53" y2="92" stroke="#a0a0d0" stroke-width="2"/>
+    ${[-3,-1,0,1,3].map((o,i)=>`<path d="M${24+i*8},20 L${26+i*8},-${6+i%3*6} L${28+i*8},20 Z" fill="#2020a0" opacity=".7"/>`).join('')}
+  </g>`;
 }
 
 // --- Battle scene render functions ---
@@ -2715,6 +2913,13 @@ function triggerHeroEvolve() {
   setTimeout(() => hero.classList.remove('hero-evolve'), 900);
 }
 
+// ===== HARD RESET =====
+function hardReset() {
+  if (!confirm('HARD RESET: This will erase ALL progress including Essence and meta-upgrades. Cannot be undone!')) return;
+  localStorage.removeItem('ascension_loop_save');
+  location.reload();
+}
+
 // ===== INIT =====
 function init() {
   const loaded = loadGame();
@@ -2729,6 +2934,9 @@ function init() {
 
   // Click handler
   document.getElementById('click-btn').addEventListener('click', handleClick);
+
+  // Hard reset button
+  document.getElementById('hard-reset-btn').addEventListener('click', hardReset);
 
   // Reset button
   document.getElementById('reset-btn').addEventListener('click', () => {
