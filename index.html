@@ -579,6 +579,128 @@ body {
 #meta-cycles .big { font-size: 20px; font-weight: bold; color: var(--essence); }
 #meta-cycles .label { font-size: 10px; color: var(--text2); }
 
+/* ===== BATTLE SCENE ===== */
+#battle-scene {
+  width: 100%;
+  max-width: 400px;
+  height: 160px;
+  background: linear-gradient(180deg, transparent 0%, rgba(14,14,26,0.6) 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 10px 8px;
+  position: relative;
+  overflow: hidden;
+}
+/* Ground line */
+#battle-scene::after {
+  content: '';
+  position: absolute;
+  bottom: 28px;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), var(--border), transparent);
+}
+#hero-wrap, #monster-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  z-index: 2;
+}
+#hero-svg {
+  width: 72px;
+  height: 110px;
+  filter: drop-shadow(0 0 6px currentColor);
+  animation: heroIdle 2.4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+#monster-svg {
+  width: 80px;
+  height: 110px;
+  filter: drop-shadow(0 0 6px currentColor);
+  animation: monsterIdle 2s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+.char-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+  text-align: center;
+  text-transform: uppercase;
+}
+/* Idle animations */
+@keyframes heroIdle {
+  0%,100% { transform: translateY(0) scaleY(1); }
+  50%     { transform: translateY(-4px) scaleY(1.02); }
+}
+@keyframes monsterIdle {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  30%     { transform: translateY(-3px) rotate(1deg); }
+  70%     { transform: translateY(-2px) rotate(-1deg); }
+}
+/* Attack animation (hero) */
+@keyframes heroAttack {
+  0%   { transform: translateX(0) scaleX(1); }
+  30%  { transform: translateX(20px) scaleX(0.9); }
+  50%  { transform: translateX(30px) scaleX(1.1); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+/* Hit animation (monster) */
+@keyframes monsterHit {
+  0%,100% { transform: translateX(0); filter: drop-shadow(0 0 6px currentColor); }
+  20%  { transform: translateX(12px); filter: drop-shadow(0 0 20px #ff4040) brightness(2); }
+  40%  { transform: translateX(-6px); }
+  70%  { transform: translateX(4px); }
+}
+/* Death animation (monster) */
+@keyframes monsterDie {
+  0%   { transform: scaleX(1) scaleY(1) rotate(0deg); opacity: 1; }
+  40%  { transform: scaleX(1.2) scaleY(0.6) rotate(15deg); opacity: 0.8; }
+  100% { transform: scaleX(0.1) scaleY(0.1) rotate(90deg); opacity: 0; }
+}
+/* Hero transform (on stage change) */
+@keyframes heroEvolve {
+  0%   { transform: scale(0.5); opacity: 0; filter: brightness(5); }
+  50%  { transform: scale(1.3); opacity: 1; filter: brightness(2); }
+  100% { transform: scale(1);   opacity: 1; filter: drop-shadow(0 0 6px currentColor); }
+}
+.hero-attack { animation: heroAttack 0.35s ease-out forwards !important; }
+.monster-hit  { animation: monsterHit 0.4s ease-out forwards !important; }
+.monster-die  { animation: monsterDie 0.5s ease-out forwards !important; }
+.hero-evolve  { animation: heroEvolve 0.8s ease-out forwards !important; }
+
+/* Slash effect */
+#slash-fx {
+  position: absolute;
+  top: 30%;
+  left: 45%;
+  font-size: 28px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 10;
+  text-shadow: 0 0 12px #fff;
+  transform: rotate(-20deg);
+}
+@keyframes slashAnim {
+  0%   { opacity: 1; transform: rotate(-20deg) scale(0.5); }
+  40%  { opacity: 1; transform: rotate(-30deg) scale(1.4); }
+  100% { opacity: 0; transform: rotate(-10deg) scale(0.8) translateY(-20px); }
+}
+.slash-show { animation: slashAnim 0.35s ease-out forwards !important; }
+
+/* Stage-level upgrade glow */
+.upg-btn[data-lvl="3"]  { border-color: rgba(240,192,64,0.5); }
+.upg-btn[data-lvl="6"]  { border-color: rgba(176,96,255,0.7); box-shadow: 0 0 6px rgba(176,96,255,0.2); }
+.upg-btn[data-lvl="10"] { border-color: var(--s7); box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+
+/* Icon badge on upgrades */
+.upg-icon { font-size: 14px; margin-right: 4px; vertical-align: middle; }
+
 /* Responsive */
 @media (max-width: 800px) {
   #main { grid-template-columns: 1fr; }
@@ -641,6 +763,19 @@ body {
       <button id="click-btn">
         <div style="pointer-events:none">STRIKE</div>
       </button>
+
+      <!-- Battle Scene: hero vs monster -->
+      <div id="battle-scene">
+        <div id="hero-wrap">
+          <svg id="hero-svg" viewBox="0 0 80 120" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="char-label" id="hero-label">Hero</div>
+        </div>
+        <div id="slash-fx">⚔</div>
+        <div id="monster-wrap">
+          <svg id="monster-svg" viewBox="0 0 80 120" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="char-label" id="monster-label">Slime</div>
+        </div>
+      </div>
 
       <!-- DPS info -->
       <div id="dps-row">
@@ -793,12 +928,12 @@ const STAGE_COLORS = [
 // ===== WEAPON UPGRADE DEFINITIONS =====
 const WEAPONS = [
   // sword and rune effects are no-ops: damage is computed from counts in getClickDamage()
-  { id: 'sword',  name: 'Iron Sword',      desc: '+10 click damage (stacks)', baseCost: 50,   costMult: 2.2,   effect: () => {} },
-  { id: 'bow',    name: 'Hunter Bow',       desc: '+3% crit chance',   baseCost: 120,  costMult: 2.5,   effect: () => { G.critChance += 0.03; } },
-  { id: 'staff',  name: 'Magic Staff',      desc: 'Crit multiplier +0.5x', baseCost: 300, costMult: 2.8, effect: () => { G.critMult += 0.5; } },
-  { id: 'armor',  name: 'Battle Armor',     desc: '+10% auto DPS',     baseCost: 200,  costMult: 2.0,   effect: () => {} },
-  { id: 'rune',   name: 'Power Rune',       desc: 'x2 click damage (stacks)', baseCost: 1000, costMult: 3.0, effect: () => {} },
-  { id: 'autoAttack', name: 'Auto-Attack',  desc: 'Unlock auto-DPS (2 DPS)', baseCost: 80, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
+  { id: 'sword',  name: 'Iron Sword',      icon: '⚔',  desc: '+10 click damage (stacks)', baseCost: 50,   costMult: 2.2,   effect: () => {} },
+  { id: 'bow',    name: 'Hunter Bow',       icon: '🏹', desc: '+3% crit chance',   baseCost: 120,  costMult: 2.5,   effect: () => { G.critChance += 0.03; } },
+  { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 300, costMult: 2.8, effect: () => { G.critMult += 0.5; } },
+  { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+10% auto DPS',     baseCost: 200,  costMult: 2.0,   effect: () => {} },
+  { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click damage (stacks)', baseCost: 1000, costMult: 3.0, effect: () => {} },
+  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock auto-DPS (2 DPS)', baseCost: 80, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
 ];
 
 // ===== UNIT DEFINITIONS (Stage 2) =====
@@ -921,10 +1056,10 @@ function getDarkMatterFromBoss(wave) {
 }
 
 function newWave() {
-  const isBoss = G.wave % 10 === 0;
   G.enemyMaxHP = getEnemyHP(G.wave, G.stage);
   G.enemyHP = G.enemyMaxHP;
   updateEnemyDisplay();
+  updateMonsterSVG(); // update monster art for new wave
 }
 
 function killEnemy() {
@@ -939,10 +1074,12 @@ function killEnemy() {
     G.darkMatter += getDarkMatterFromBoss(G.wave);
   }
 
-  // Advance wave
-  G.wave++;
-  newWave();
-  checkEvolution();
+  // Animate death, then advance wave
+  triggerMonsterDeath(() => {
+    G.wave++;
+    newWave();
+    checkEvolution();
+  });
 }
 
 // ===== DAMAGE CALCULATION =====
@@ -1051,9 +1188,10 @@ function handleClick(evt) {
   let isCrit = Math.random() < getCritChance();
   if (isCrit) dmg *= getCritMult();
   dealDamage(dmg);
-
   // Floater
-  spawnFloater(evt.clientX, evt.clientY, fmt(dmg), isCrit ? '#ffd700' : 'var(--text)');
+  spawnFloater(evt.clientX, evt.clientY, (isCrit ? '✦ CRIT ' : '') + fmt(dmg), isCrit ? '#ffd700' : 'var(--text)');
+  // Battle scene animation
+  triggerHeroAttack();
 }
 
 function spawnFloater(x, y, text, color) {
@@ -1105,6 +1243,9 @@ function evolveStage() {
   G.stage++;
   showOverlay(`STAGE ${G.stage}: ${STAGE_NAMES[G.stage].toUpperCase()}`, getStageEvolveText(G.stage));
   rebuildUI();
+  // Animate hero transformation
+  triggerHeroEvolve();
+  updateMonsterSVG();
   // Enable reset button at stage 7
   document.getElementById('reset-btn').disabled = G.stage < 7;
 }
@@ -1188,6 +1329,7 @@ function triggerCollapse() {
   document.getElementById('reset-btn').disabled = true;
   newWave();
   rebuildUI();
+  triggerHeroEvolve(); // reset back to stage 1 hero
   showOverlay('UNIVERSAL COLLAPSE', 'The cycle begins anew. Your Essence persists...');
 }
 
@@ -1319,10 +1461,15 @@ function renderStage1Upgrades(area) {
     const count = w.oneTime ? (G.weapons[w.id] ? 1 : 0) : G.weapons[w.id];
     const cost = getWeaponCost(w);
     const bought = w.oneTime && G.weapons[w.id];
+    const lvlTier = count >= 10 ? '10' : count >= 6 ? '6' : count >= 3 ? '3' : '0';
     const btn = document.createElement('button');
     btn.className = 'upg-btn' + (bought ? ' bought' : '');
+    btn.dataset.lvl = lvlTier;
     btn.disabled = bought || G.gold < cost;
-    btn.innerHTML = `<div class="upg-name">${w.name} ${!w.oneTime && count > 0 ? '<span class="upg-count">x' + count + '</span>' : ''}</div>
+    btn.innerHTML = `<div class="upg-name">
+        <span class="upg-icon">${w.icon || ''}</span>${w.name}
+        ${!w.oneTime && count > 0 ? '<span class="upg-count">x' + count + '</span>' : ''}
+      </div>
       <div class="upg-desc">${w.desc}</div>
       <div class="upg-cost">${bought ? '✓ Bought' : '🪙 ' + fmt(cost)}</div>`;
     if (!bought) {
@@ -1761,6 +1908,773 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 
+// ============================================================
+//  BATTLE SCENE — Hero & Monster SVG art + animations
+// ============================================================
+
+// --- Hero SVG definitions per stage ---
+function getHeroSVG(stage) {
+  // Each stage returns an SVG inner content string.
+  // All use viewBox 0 0 80 120. Character stands on y≈108.
+  const h = {
+    // Stage 1: Simple warrior — blue armor, sword, kite shield
+    1: `
+      <g style="color:var(--s1)">
+        <!-- Boots -->
+        <rect x="26" y="100" width="12" height="8" rx="2" fill="#1a2040"/>
+        <rect x="42" y="100" width="12" height="8" rx="2" fill="#1a2040"/>
+        <!-- Legs -->
+        <rect x="28" y="84" width="10" height="18" rx="3" fill="#3050a0"/>
+        <rect x="42" y="84" width="10" height="18" rx="3" fill="#3050a0"/>
+        <!-- Body -->
+        <rect x="24" y="58" width="32" height="28" rx="4" fill="#4060b0"/>
+        <!-- Chest detail -->
+        <rect x="36" y="62" width="8" height="18" rx="2" fill="#5070c0"/>
+        <!-- Belt -->
+        <rect x="22" y="82" width="36" height="5" rx="2" fill="#7a3010"/>
+        <!-- Belt buckle -->
+        <rect x="36" y="83" width="8" height="3" rx="1" fill="#c0a030"/>
+        <!-- Left arm — shield -->
+        <rect x="12" y="60" width="10" height="5" rx="2" fill="#3050a0"/>
+        <!-- Kite shield -->
+        <path d="M6,64 L6,82 Q6,88 14,92 Q22,88 22,82 L22,64 Z" fill="#6040b0" stroke="#8060d0" stroke-width="1.5"/>
+        <line x1="14" y1="64" x2="14" y2="90" stroke="#9070e0" stroke-width="1"/>
+        <line x1="6" y1="76" x2="22" y2="76" stroke="#9070e0" stroke-width="1"/>
+        <!-- Right arm — sword -->
+        <rect x="58" y="60" width="10" height="5" rx="2" fill="#3050a0"/>
+        <!-- Sword blade -->
+        <rect x="67" y="28" width="5" height="40" rx="2" fill="#c8cce0"/>
+        <!-- Crossguard -->
+        <rect x="60" y="58" width="19" height="4" rx="2" fill="#909090"/>
+        <!-- Pommel -->
+        <circle cx="69" cy="68" r="3" fill="#a0a0b0"/>
+        <!-- Sword shine -->
+        <line x1="69" y1="30" x2="71" y2="50" stroke="white" stroke-width="1" opacity="0.6"/>
+        <!-- Neck -->
+        <rect x="34" y="50" width="12" height="10" rx="3" fill="#d09060"/>
+        <!-- Helmet -->
+        <path d="M22,52 Q22,38 40,36 Q58,38 58,52 L58,58 L22,58 Z" fill="#5070b0"/>
+        <!-- Visor ridge -->
+        <rect x="22" y="52" width="36" height="3" rx="1" fill="#3050a0"/>
+        <!-- Visor slit -->
+        <rect x="28" y="48" width="24" height="3" rx="1" fill="#10203a"/>
+        <!-- Plume -->
+        <path d="M38,36 Q36,28 34,20 Q38,24 40,18 Q42,24 46,20 Q44,28 42,36 Z" fill="#c03020"/>
+      </g>`,
+
+    // Stage 2: Knight — heavier armor, full visor, larger shield, cape
+    2: `
+      <g style="color:var(--s2)">
+        <!-- Cape -->
+        <path d="M26,58 Q14,80 16,108 L26,108 Q24,86 30,70 Z" fill="#204020" opacity="0.85"/>
+        <path d="M54,58 Q66,80 64,108 L54,108 Q56,86 50,70 Z" fill="#204020" opacity="0.85"/>
+        <!-- Boots -->
+        <rect x="24" y="100" width="14" height="8" rx="2" fill="#101818"/>
+        <rect x="42" y="100" width="14" height="8" rx="2" fill="#101818"/>
+        <!-- Legs — full plate -->
+        <rect x="26" y="82" width="12" height="20" rx="3" fill="#306030"/>
+        <rect x="42" y="82" width="12" height="20" rx="3" fill="#306030"/>
+        <rect x="25" y="90" width="14" height="4" rx="1" fill="#40a040"/>
+        <rect x="41" y="90" width="14" height="4" rx="1" fill="#40a040"/>
+        <!-- Body — plate cuirass -->
+        <rect x="22" y="55" width="36" height="30" rx="5" fill="#306030"/>
+        <!-- Chest flute -->
+        <path d="M40,58 Q36,65 36,82 M40,58 Q44,65 44,82" stroke="#50c050" stroke-width="1.5" fill="none"/>
+        <!-- Pauldrons -->
+        <ellipse cx="18" cy="60" rx="8" ry="5" fill="#408040"/>
+        <ellipse cx="62" cy="60" rx="8" ry="5" fill="#408040"/>
+        <!-- Belt -->
+        <rect x="20" y="81" width="40" height="5" rx="2" fill="#3a5020"/>
+        <!-- Shield (tower) -->
+        <path d="M4,60 L4,88 Q4,96 13,100 Q22,96 22,88 L22,60 Z" fill="#50a050" stroke="#70d070" stroke-width="1.5"/>
+        <path d="M13,62 L13,98" stroke="#90f090" stroke-width="1" opacity="0.5"/>
+        <path d="M5,74 L21,74" stroke="#90f090" stroke-width="1" opacity="0.5"/>
+        <!-- Shield emblem -->
+        <path d="M8,76 L13,70 L18,76 L13,82 Z" fill="#c0ff80" opacity="0.6"/>
+        <!-- Sword arm -->
+        <rect x="58" y="58" width="11" height="5" rx="2" fill="#306030"/>
+        <!-- Greatsword -->
+        <rect x="66" y="20" width="6" height="50" rx="2" fill="#b0c8e0"/>
+        <rect x="58" y="62" width="22" height="5" rx="2" fill="#808090"/>
+        <circle cx="69" cy="72" r="4" fill="#90a0b0"/>
+        <line x1="69" y1="22" x2="72" y2="58" stroke="white" stroke-width="1" opacity="0.5"/>
+        <!-- Neck -->
+        <rect x="33" y="46" width="14" height="12" rx="3" fill="#c08050"/>
+        <!-- Great Helm -->
+        <rect x="22" y="46" width="36" height="14" rx="3" fill="#306030"/>
+        <path d="M20,48 Q20,34 40,32 Q60,34 60,48 L60,52 L20,52 Z" fill="#408040"/>
+        <!-- Visor slit -->
+        <rect x="26" y="50" width="28" height="3" rx="1" fill="#0a1a0a"/>
+        <!-- Crest -->
+        <path d="M36,32 Q34,22 32,14 Q38,20 40,12 Q42,20 48,14 Q46,22 44,32 Z" fill="#a0ff60"/>
+      </g>`,
+
+    // Stage 3: General/Commander — cape, banner, crown, commanding
+    3: `
+      <g style="color:var(--s3)">
+        <!-- Long cape -->
+        <path d="M28,56 Q10,78 12,108 L26,108 Q20,84 30,68 Z" fill="#602010" opacity="0.9"/>
+        <path d="M52,56 Q70,78 68,108 L54,108 Q60,84 50,68 Z" fill="#602010" opacity="0.9"/>
+        <!-- Boots -->
+        <rect x="24" y="100" width="14" height="8" rx="2" fill="#200a00"/>
+        <rect x="42" y="100" width="14" height="8" rx="2" fill="#200a00"/>
+        <!-- Legs -->
+        <rect x="26" y="80" width="12" height="22" rx="3" fill="#803820"/>
+        <rect x="42" y="80" width="12" height="22" rx="3" fill="#803820"/>
+        <!-- Body — general's armor -->
+        <rect x="20" y="52" width="40" height="32" rx="5" fill="#904020"/>
+        <!-- Chest medal/star -->
+        <path d="M40,60 L42,66 L48,66 L43,70 L45,76 L40,72 L35,76 L37,70 L32,66 L38,66 Z" fill="#ffd040"/>
+        <!-- Pauldrons (large) -->
+        <path d="M8,52 Q6,60 8,68 L20,66 L20,52 Z" fill="#a04820"/>
+        <path d="M72,52 Q74,60 72,68 L60,66 L60,52 Z" fill="#a04820"/>
+        <!-- Belt + holster -->
+        <rect x="18" y="80" width="44" height="5" rx="2" fill="#401808"/>
+        <!-- Left: Battle-axe -->
+        <rect x="4" y="54" width="5" height="52" rx="2" fill="#909090"/>
+        <path d="M0,54 Q-2,42 4,40 Q12,42 12,54 Z" fill="#b0b0b0"/>
+        <path d="M0,60 Q-2,72 4,74 Q12,72 12,60 Z" fill="#b0b0b0"/>
+        <!-- Right: Spear/banner staff -->
+        <rect x="71" y="8" width="5" height="96" rx="2" fill="#804020"/>
+        <!-- Banner -->
+        <path d="M76,10 L76,38 L60,28 L76,18 Z" fill="#d03020"/>
+        <path d="M76,14 L76,34" stroke="#ff6040" stroke-width="1"/>
+        <!-- Neck -->
+        <rect x="33" y="43" width="14" height="12" rx="3" fill="#c07040"/>
+        <!-- Helmet with crown -->
+        <path d="M22,46 Q22,32 40,30 Q58,32 58,46 L58,54 L22,54 Z" fill="#a04820"/>
+        <rect x="22" y="50" width="36" height="4" rx="1" fill="#c05020"/>
+        <rect x="26" y="48" width="28" height="3" rx="1" fill="#100800"/>
+        <!-- Crown spikes -->
+        <path d="M26,30 L28,20 L32,30 Z" fill="#ffd040"/>
+        <path d="M36,30 L38,16 L42,30 Z" fill="#ffd040"/>
+        <path d="M46,30 L50,20 L52,30 Z" fill="#ffd040"/>
+        <!-- Crown gems -->
+        <circle cx="30" cy="28" r="2" fill="#ff4060"/>
+        <circle cx="40" cy="23" r="2.5" fill="#40c0ff"/>
+        <circle cx="50" cy="28" r="2" fill="#40ff80"/>
+      </g>`,
+
+    // Stage 4: Cosmic Warrior — floating, energy armor, star motifs, purple glow
+    4: `
+      <g style="color:var(--s4)">
+        <!-- Energy tendrils (floating effect) -->
+        <path d="M30,105 Q20,100 18,108" stroke="#8040ff" stroke-width="2" fill="none" opacity="0.6"/>
+        <path d="M50,105 Q60,100 62,108" stroke="#8040ff" stroke-width="2" fill="none" opacity="0.6"/>
+        <!-- Legs — cosmic energy -->
+        <rect x="28" y="82" width="10" height="22" rx="5" fill="#6030c0" opacity="0.8"/>
+        <rect x="42" y="82" width="10" height="22" rx="5" fill="#6030c0" opacity="0.8"/>
+        <path d="M28,90 L38,90 M42,90 L52,90" stroke="#b060ff" stroke-width="2"/>
+        <!-- Cosmic robe/body -->
+        <path d="M20,54 Q18,82 22,104 L58,104 Q62,82 60,54 Z" fill="#5020a0" opacity="0.85"/>
+        <!-- Armor chest -->
+        <ellipse cx="40" cy="66" rx="16" ry="14" fill="#6030b0"/>
+        <!-- Star of power -->
+        <path d="M40,58 L42,63 L47,63 L43,67 L45,72 L40,68 L35,72 L37,67 L33,63 L38,63 Z" fill="#d060ff"/>
+        <!-- Orbiting rings -->
+        <ellipse cx="40" cy="68" rx="22" ry="6" fill="none" stroke="#a040ff" stroke-width="1.5" opacity="0.7" transform="rotate(-20 40 68)"/>
+        <ellipse cx="40" cy="68" rx="22" ry="6" fill="none" stroke="#60c0ff" stroke-width="1" opacity="0.5" transform="rotate(40 40 68)"/>
+        <!-- Pauldrons — crystal -->
+        <path d="M6,54 L14,50 L20,58 L14,68 L6,62 Z" fill="#7040c0"/>
+        <path d="M74,54 L66,50 L60,58 L66,68 L74,62 Z" fill="#7040c0"/>
+        <line x1="10" y1="52" x2="17" y2="64" stroke="#b060ff" stroke-width="1"/>
+        <line x1="70" y1="52" x2="63" y2="64" stroke="#b060ff" stroke-width="1"/>
+        <!-- Cosmic sword — energy blade -->
+        <rect x="67" y="38" width="4" height="50" rx="2" fill="#4020a0"/>
+        <rect x="65" y="36" width="8" height="52" rx="4" fill="#a060ff" opacity="0.4"/>
+        <rect x="60" y="66" width="18" height="4" rx="2" fill="#8050d0"/>
+        <!-- Blade glow lines -->
+        <line x1="69" y1="38" x2="69" y2="80" stroke="#e0a0ff" stroke-width="1" opacity="0.8"/>
+        <!-- Neck -->
+        <rect x="34" y="44" width="12" height="12" rx="4" fill="#9060d0"/>
+        <!-- Cosmic helm -->
+        <path d="M22,46 Q22,32 40,28 Q58,32 58,46 L58,56 L22,56 Z" fill="#6030b0"/>
+        <!-- Visor energy glow -->
+        <rect x="26" y="46" width="28" height="5" rx="2" fill="#200040"/>
+        <rect x="28" y="47" width="24" height="3" rx="1" fill="#c060ff" opacity="0.7"/>
+        <!-- Cosmic horns -->
+        <path d="M26,32 Q18,22 20,10 Q26,18 28,28 Z" fill="#8040c0"/>
+        <path d="M54,32 Q62,22 60,10 Q54,18 52,28 Z" fill="#8040c0"/>
+        <!-- Stars on body -->
+        <circle cx="34" cy="78" r="1.5" fill="#d0a0ff"/>
+        <circle cx="46" cy="74" r="1.5" fill="#d0a0ff"/>
+        <circle cx="38" cy="95" r="1" fill="#b080ff"/>
+      </g>`,
+
+    // Stage 5: Divine Entity — wings, halo, ethereal, barely corporeal
+    5: `
+      <g style="color:var(--s5)">
+        <!-- Wings (left) -->
+        <path d="M24,52 Q-4,40 -8,60 Q-4,75 14,72 Q4,80 2,95 L18,84 Z" fill="#ff40ff" opacity="0.5"/>
+        <path d="M24,52 Q0,48 -2,60 Q2,68 16,68 Z" fill="#ff80ff" opacity="0.3"/>
+        <!-- Wings (right) -->
+        <path d="M56,52 Q84,40 88,60 Q84,75 66,72 Q76,80 78,95 L62,84 Z" fill="#ff40ff" opacity="0.5"/>
+        <path d="M56,52 Q80,48 82,60 Q78,68 64,68 Z" fill="#ff80ff" opacity="0.3"/>
+        <!-- Body — ethereal, flowing -->
+        <path d="M26,56 Q20,80 22,108 L58,108 Q60,80 54,56 Z" fill="#c030c0" opacity="0.4"/>
+        <!-- Divine form core -->
+        <ellipse cx="40" cy="68" rx="16" ry="20" fill="#d040d0" opacity="0.6"/>
+        <!-- Inner light -->
+        <ellipse cx="40" cy="66" rx="8" ry="10" fill="#ff80ff" opacity="0.5"/>
+        <!-- Runes on body -->
+        <text x="34" y="68" font-size="8" fill="#ffb0ff" opacity="0.9" font-family="serif">✦</text>
+        <text x="40" y="80" font-size="6" fill="#ffb0ff" opacity="0.7">◈</text>
+        <text x="44" y="62" font-size="6" fill="#ffb0ff" opacity="0.7">✧</text>
+        <!-- Arms — pure energy streams -->
+        <path d="M24,58 Q10,54 6,44 Q10,40 16,46 Q14,50 20,56 Z" fill="#ff60ff" opacity="0.7"/>
+        <path d="M56,58 Q70,54 74,44 Q70,40 64,46 Q66,50 60,56 Z" fill="#ff60ff" opacity="0.7"/>
+        <!-- Divine weapon: staff of light -->
+        <rect x="68" y="20" width="4" height="80" rx="2" fill="#ff80ff" opacity="0.6"/>
+        <ellipse cx="70" cy="20" rx="7" ry="7" fill="#ffb0ff" opacity="0.8"/>
+        <path d="M63,14 L70,6 L77,14 M66,10 L70,4 L74,10" stroke="#ffffff" stroke-width="1.5" fill="none"/>
+        <!-- Neck / face area -->
+        <circle cx="40" cy="42" r="12" fill="#e870e8" opacity="0.7"/>
+        <!-- Eyes — pure light -->
+        <ellipse cx="35" cy="41" rx="4" ry="3" fill="#ffb0ff"/>
+        <ellipse cx="45" cy="41" rx="4" ry="3" fill="#ffb0ff"/>
+        <circle cx="35" cy="41" r="2" fill="white"/>
+        <circle cx="45" cy="41" r="2" fill="white"/>
+        <!-- Halo -->
+        <ellipse cx="40" cy="30" rx="18" ry="5" fill="none" stroke="#ffff80" stroke-width="2.5" opacity="0.9"/>
+        <ellipse cx="40" cy="30" rx="18" ry="5" fill="none" stroke="white" stroke-width="1" opacity="0.6"/>
+      </g>`,
+
+    // Stage 6: Universal Absolute — multi-armed, reality-tearing, imposing
+    6: `
+      <g style="color:var(--s6)">
+        <!-- Reality tears behind body -->
+        <path d="M6,30 Q10,50 8,80 Q12,60 16,40 Z" fill="#ff2000" opacity="0.4"/>
+        <path d="M74,30 Q70,50 72,80 Q68,60 64,40 Z" fill="#ff2000" opacity="0.4"/>
+        <!-- Extra arms (upper) -->
+        <path d="M24,50 Q8,34 2,22 Q10,28 18,36 Q20,32 22,44 Z" fill="#c04020"/>
+        <path d="M56,50 Q72,34 78,22 Q70,28 62,36 Q60,32 58,44 Z" fill="#c04020"/>
+        <!-- Flaming weapons in extra hands -->
+        <line x1="2" y1="22" x2="-6" y2="8" stroke="#ff6020" stroke-width="3"/>
+        <path d="M-8,6 Q-4,2 0,8 Q-2,12 -6,8 Z" fill="#ff8030"/>
+        <line x1="78" y1="22" x2="86" y2="8" stroke="#ff6020" stroke-width="3"/>
+        <path d="M88,6 Q84,2 80,8 Q82,12 86,8 Z" fill="#ff8030"/>
+        <!-- Legs -->
+        <rect x="26" y="82" width="12" height="22" rx="4" fill="#902020"/>
+        <rect x="42" y="82" width="12" height="22" rx="4" fill="#902020"/>
+        <!-- Body — massive dark armor -->
+        <rect x="18" y="50" width="44" height="36" rx="6" fill="#701818"/>
+        <!-- Chest fire rune -->
+        <path d="M40,56 L43,63 L50,63 L44,68 L47,75 L40,70 L33,75 L36,68 L30,63 L37,63 Z" fill="#ff4020"/>
+        <path d="M40,58 L42,63 L47,63 L43,67 L45,72 L40,68 L35,72 L37,67 L33,63 L38,63 Z" fill="#ff8040" opacity="0.7"/>
+        <!-- Pauldrons — massive spiked -->
+        <path d="M4,48 L18,46 L20,62 L8,64 Z" fill="#a02020"/>
+        <path d="M76,48 L62,46 L60,62 L72,64 Z" fill="#a02020"/>
+        <line x1="8" y1="46" x2="4" y2="36" stroke="#ff4020" stroke-width="2"/>
+        <line x1="72" y1="46" x2="76" y2="36" stroke="#ff4020" stroke-width="2"/>
+        <!-- Normal arms -->
+        <rect x="10" y="54" width="8" height="5" rx="2" fill="#901818"/>
+        <rect x="62" y="54" width="8" height="5" rx="2" fill="#901818"/>
+        <!-- Twin blades -->
+        <rect x="2" y="58" width="6" height="38" rx="3" fill="#c04030"/>
+        <rect x="72" y="58" width="6" height="38" rx="3" fill="#c04030"/>
+        <line x1="5" y1="58" x2="5" y2="90" stroke="#ff8060" stroke-width="1" opacity="0.8"/>
+        <line x1="75" y1="58" x2="75" y2="90" stroke="#ff8060" stroke-width="1" opacity="0.8"/>
+        <!-- Belt -->
+        <rect x="16" y="82" width="48" height="5" rx="2" fill="#500e0e"/>
+        <!-- Neck -->
+        <rect x="34" y="40" width="12" height="14" rx="4" fill="#b03020"/>
+        <!-- Helm — demon horns -->
+        <path d="M20,44 Q20,28 40,26 Q60,28 60,44 L60,54 L20,54 Z" fill="#901818"/>
+        <!-- Horns -->
+        <path d="M26,28 Q22,14 28,4 Q30,14 32,24 Z" fill="#c03010"/>
+        <path d="M54,28 Q58,14 52,4 Q50,14 48,24 Z" fill="#c03010"/>
+        <!-- Eye slit (glowing red) -->
+        <rect x="26" y="46" width="28" height="4" rx="1" fill="#1a0000"/>
+        <rect x="28" y="47" width="24" height="2" rx="1" fill="#ff2000" opacity="0.9"/>
+      </g>`,
+
+    // Stage 7: Singularity — collapsing energy form, barely visible, pure power
+    7: `
+      <g style="color:var(--s7)">
+        <!-- Outer energy halo rings -->
+        <ellipse cx="40" cy="60" rx="34" ry="34" fill="none" stroke="white" stroke-width="0.5" opacity="0.15"/>
+        <ellipse cx="40" cy="60" rx="26" ry="26" fill="none" stroke="white" stroke-width="0.8" opacity="0.25"/>
+        <!-- Collapsing energy wisps -->
+        <path d="M14,30 Q6,50 10,80 Q18,60 20,40 Z" fill="white" opacity="0.1"/>
+        <path d="M66,30 Q74,50 70,80 Q62,60 60,40 Z" fill="white" opacity="0.1"/>
+        <path d="M40,10 Q28,20 22,40 Q34,30 40,20 Z" fill="white" opacity="0.12"/>
+        <path d="M40,10 Q52,20 58,40 Q46,30 40,20 Z" fill="white" opacity="0.12"/>
+        <!-- Inner void body -->
+        <ellipse cx="40" cy="62" rx="20" ry="32" fill="#0a0a1a" opacity="0.9"/>
+        <!-- Singularity core -->
+        <circle cx="40" cy="60" r="10" fill="white" opacity="0.05"/>
+        <circle cx="40" cy="60" r="6"  fill="white" opacity="0.2"/>
+        <circle cx="40" cy="60" r="3"  fill="white" opacity="0.6"/>
+        <circle cx="40" cy="60" r="1.5" fill="white"/>
+        <!-- Energy lines converging to core -->
+        <line x1="6"  y1="28" x2="36" y2="58" stroke="white" stroke-width="0.8" opacity="0.5"/>
+        <line x1="74" y1="28" x2="44" y2="58" stroke="white" stroke-width="0.8" opacity="0.5"/>
+        <line x1="40" y1="8"  x2="40" y2="54" stroke="white" stroke-width="0.8" opacity="0.5"/>
+        <line x1="8"  y1="88" x2="36" y2="64" stroke="white" stroke-width="0.8" opacity="0.4"/>
+        <line x1="72" y1="88" x2="44" y2="64" stroke="white" stroke-width="0.8" opacity="0.4"/>
+        <!-- Floating rune fragments -->
+        <text x="20" y="38" font-size="9" fill="white" opacity="0.5" transform="rotate(-20 20 38)">✦</text>
+        <text x="54" y="42" font-size="7" fill="white" opacity="0.4" transform="rotate(15 54 42)">◈</text>
+        <text x="16" y="80" font-size="7" fill="white" opacity="0.4" transform="rotate(-10 16 80)">✧</text>
+        <text x="56" y="84" font-size="9" fill="white" opacity="0.5" transform="rotate(10 56 84)">✦</text>
+        <!-- Eyes — twin singularity points -->
+        <circle cx="34" cy="56" r="2.5" fill="white" opacity="0.9"/>
+        <circle cx="46" cy="56" r="2.5" fill="white" opacity="0.9"/>
+        <!-- Halo — collapsing ring -->
+        <ellipse cx="40" cy="32" rx="22" ry="6" fill="none" stroke="white" stroke-width="2" opacity="0.7"/>
+      </g>`
+  };
+  return h[stage] || h[1];
+}
+
+// --- Monster SVG definitions per stage ---
+// waveVariant 0-7 gives slight shape variations; boss = larger/angrier
+function getMonsterSVG(stage, waveNum, isBoss) {
+  const v = waveNum % 6; // 0-5 variant
+  const b = isBoss;
+  const sc = b ? 'transform="scale(1.15) translate(-6,-8)"' : '';
+  // Color palettes per stage
+  const pal = {
+    1: ['#40c040','#206020','#80ff60'], // green (slime/forest)
+    2: ['#c08040','#604010','#ffc060'], // bronze (golem)
+    3: ['#c04040','#601010','#ff8040'], // red (army titan)
+    4: ['#8040ff','#401880','#d0a0ff'], // cosmic purple
+    5: ['#ff40ff','#801080','#ffb0ff'], // divine pink
+    6: ['#ff4020','#801000','#ff8040'], // infernal orange
+    7: ['#e0e0ff','#404060','#ffffff']  // void white
+  };
+  const [c1, c2, c3] = pal[stage] || pal[1];
+
+  // Each stage has a unique monster archetype
+  const monsters = {
+    // Stage 1: organic creatures — slime / goblin / skeleton variants
+    1: `<g ${sc}>
+      ${v < 2 ? `
+        <!-- Slime -->
+        <ellipse cx="40" cy="82" rx="28" ry="20" fill="${c1}" opacity="0.9"/>
+        <ellipse cx="40" cy="72" rx="22" ry="26" fill="${c1}"/>
+        <ellipse cx="40" cy="68" rx="18" ry="20" fill="${c2}" opacity="0.4"/>
+        <!-- Eyes -->
+        <circle cx="32" cy="68" r="6" fill="white"/>
+        <circle cx="48" cy="68" r="6" fill="white"/>
+        <circle cx="${33+v}" cy="68" r="3" fill="${c2}"/>
+        <circle cx="${49+v}" cy="68" r="3" fill="${c2}"/>
+        <circle cx="${34+v}" cy="67" r="1.5" fill="black"/>
+        <circle cx="${50+v}" cy="67" r="1.5" fill="black"/>
+        <!-- Mouth -->
+        <path d="M30,78 Q40,${b?86:84} 50,78" stroke="${c2}" stroke-width="2" fill="none"/>
+        ${b ? '<path d="M30,76 L34,80 M38,80 L42,82 L46,80 M50,76 L46,80" stroke="'+c2+'" stroke-width="1.5" fill="none"/>' : ''}
+        <!-- Highlights -->
+        <ellipse cx="32" cy="60" rx="6" ry="4" fill="${c3}" opacity="0.3"/>
+      ` : v < 4 ? `
+        <!-- Goblin -->
+        <ellipse cx="40" cy="100" rx="10" ry="5" fill="${c2}" opacity="0.5"/>
+        <!-- Feet -->
+        <ellipse cx="34" cy="102" rx="6" ry="3" fill="${c2}"/>
+        <ellipse cx="46" cy="102" rx="6" ry="3" fill="${c2}"/>
+        <!-- Legs -->
+        <rect x="31" y="85" width="8" height="18" rx="4" fill="${c1}"/>
+        <rect x="41" y="85" width="8" height="18" rx="4" fill="${c1}"/>
+        <!-- Body -->
+        <ellipse cx="40" cy="75" rx="14" ry="16" fill="${c1}"/>
+        <!-- Arms -->
+        <path d="M26,70 Q16,65 12,72 Q16,76 26,76 Z" fill="${c1}"/>
+        <path d="M54,70 Q64,65 68,72 Q64,76 54,76 Z" fill="${c1}"/>
+        ${b ? '<rect x="62" y="60" width="4" height="30" rx="2" fill="#808080"/><path d="M60,58 Q64,52 68,58 Z" fill="#a0a0a0"/>' : ''}
+        <!-- Head -->
+        <ellipse cx="40" cy="56" rx="14" ry="14" fill="${c1}"/>
+        <!-- Ears -->
+        <path d="M28,52 Q22,46 26,40 Q30,46 32,50 Z" fill="${c1}"/>
+        <path d="M52,52 Q58,46 54,40 Q50,46 48,50 Z" fill="${c1}"/>
+        <!-- Eyes -->
+        <circle cx="35" cy="54" r="4" fill="red"/><circle cx="35" cy="54" r="2" fill="black"/>
+        <circle cx="45" cy="54" r="4" fill="red"/><circle cx="45" cy="54" r="2" fill="black"/>
+        <!-- Nose + teeth -->
+        <ellipse cx="40" cy="60" rx="3" ry="2" fill="${c2}"/>
+        <rect x="36" y="62" width="3" height="5" rx="1" fill="white"/>
+        <rect x="41" y="62" width="3" height="5" rx="1" fill="white"/>
+      ` : `
+        <!-- Skeleton warrior -->
+        <ellipse cx="40" cy="108" rx="12" ry="4" fill="${c2}" opacity="0.4"/>
+        <!-- Feet -->
+        <rect x="32" y="100" width="8" height="6" rx="2" fill="${c3}"/>
+        <rect x="42" y="100" width="8" height="6" rx="2" fill="${c3}"/>
+        <!-- Legs (bones) -->
+        <rect x="34" y="82" width="6" height="20" rx="3" fill="${c3}"/>
+        <rect x="42" y="82" width="6" height="20" rx="3" fill="${c3}"/>
+        <!-- Pelvis -->
+        <ellipse cx="40" cy="82" rx="12" ry="5" fill="${c3}"/>
+        <!-- Ribcage -->
+        <rect x="30" y="60" width="20" height="24" rx="3" fill="${c2}" opacity="0.8"/>
+        <line x1="40" y1="60" x2="40" y2="84" stroke="${c3}" stroke-width="1.5"/>
+        ${[0,1,2,3].map(i=>`<path d="M40,${63+i*5} Q34,${65+i*5} 30,${63+i*5}" stroke="${c3}" stroke-width="1.5" fill="none"/>
+        <path d="M40,${63+i*5} Q46,${65+i*5} 50,${63+i*5}" stroke="${c3}" stroke-width="1.5" fill="none"/>`).join('')}
+        <!-- Arms -->
+        <rect x="18" y="62" width="10" height="5" rx="2" fill="${c3}"/>
+        <rect x="52" y="62" width="10" height="5" rx="2" fill="${c3}"/>
+        <!-- Sword (right) -->
+        <rect x="60" y="40" width="4" height="44" rx="2" fill="#c0c0d0"/>
+        <rect x="56" y="68" width="12" height="3" rx="1" fill="#909090"/>
+        <!-- Shield (left) -->
+        <path d="M10,60 L10,78 Q10,86 18,88 Q26,86 26,78 L26,60 Z" fill="${c2}" stroke="${c3}" stroke-width="1"/>
+        <!-- Skull -->
+        <ellipse cx="40" cy="46" rx="13" ry="14" fill="${c3}"/>
+        <!-- Jaw -->
+        <rect x="34" y="54" width="12" height="6" rx="2" fill="${c3}"/>
+        <line x1="36" y1="58" x2="36" y2="60" stroke="${c2}" stroke-width="1.5"/>
+        <line x1="40" y1="58" x2="40" y2="60" stroke="${c2}" stroke-width="1.5"/>
+        <line x1="44" y1="58" x2="44" y2="60" stroke="${c2}" stroke-width="1.5"/>
+        <!-- Eye sockets -->
+        <ellipse cx="34" cy="44" rx="5" ry="5" fill="${c2}"/>
+        <ellipse cx="46" cy="44" rx="5" ry="5" fill="${c2}"/>
+        <circle cx="34" cy="44" r="2.5" fill="red" opacity="0.8"/>
+        <circle cx="46" cy="44" r="2.5" fill="red" opacity="0.8"/>
+      `}
+    </g>`,
+
+    // Stage 2: Iron Golem / Battle-Mage
+    2: `<g ${sc}>
+      ${v < 3 ? `
+        <!-- Iron Golem -->
+        <ellipse cx="40" cy="108" rx="18" ry="5" fill="${c2}" opacity="0.5"/>
+        <!-- Legs — massive -->
+        <rect x="24" y="80" width="14" height="26" rx="4" fill="${c1}"/>
+        <rect x="42" y="80" width="14" height="26" rx="4" fill="${c1}"/>
+        <rect x="23" y="92" width="16" height="5" rx="2" fill="${c3}" opacity="0.5"/>
+        <rect x="41" y="92" width="16" height="5" rx="2" fill="${c3}" opacity="0.5"/>
+        <!-- Body — iron cube -->
+        <rect x="18" y="50" width="44" height="34" rx="6" fill="${c1}"/>
+        <rect x="22" y="54" width="36" height="26" rx="4" fill="${c2}" opacity="0.5"/>
+        <!-- Glowing rune on chest -->
+        <rect x="34" y="60" width="12" height="14" rx="3" fill="${c3}" opacity="0.8"/>
+        <!-- Arms — huge fists -->
+        <rect x="2" y="52" width="14" height="10" rx="3" fill="${c1}"/>
+        <rect x="64" y="52" width="14" height="10" rx="3" fill="${c1}"/>
+        <!-- Fists -->
+        <rect x="0" y="58" width="16" height="16" rx="4" fill="${c1}"/>
+        <rect x="64" y="58" width="16" height="16" rx="4" fill="${c1}"/>
+        <rect x="1" y="60" width="5" height="4" rx="1" fill="${c3}" opacity="0.4"/>
+        <rect x="65" y="60" width="5" height="4" rx="1" fill="${c3}" opacity="0.4"/>
+        <!-- Head — boxy -->
+        <rect x="24" y="28" width="32" height="26" rx="4" fill="${c1}"/>
+        <!-- Eyes (glowing) -->
+        <rect x="28" y="36" width="8" height="6" rx="2" fill="${c3}"/>
+        <rect x="44" y="36" width="8" height="6" rx="2" fill="${c3}"/>
+        <!-- Grille mouth -->
+        ${[0,1,2].map(i=>`<rect x="30" y="${46+i*2}" width="20" height="1" rx="0.5" fill="${c3}" opacity="0.7"/>`).join('')}
+      ` : `
+        <!-- Battle Mage -->
+        <ellipse cx="40" cy="108" rx="14" ry="4" fill="${c2}" opacity="0.4"/>
+        <!-- Robes -->
+        <path d="M26,58 Q20,82 22,108 L58,108 Q60,82 54,58 Z" fill="${c2}"/>
+        <!-- Body glow -->
+        <ellipse cx="40" cy="72" rx="12" ry="14" fill="${c1}" opacity="0.6"/>
+        <!-- Orb on chest -->
+        <circle cx="40" cy="68" r="8" fill="${c3}" opacity="0.4"/>
+        <circle cx="40" cy="68" r="4" fill="${c3}" opacity="0.8"/>
+        <!-- Arms -->
+        <path d="M26,60 Q12,56 8,46 Q14,44 20,52 Q22,56 24,60 Z" fill="${c1}"/>
+        <path d="M54,60 Q68,56 72,46 Q66,44 60,52 Q58,56 56,60 Z" fill="${c1}"/>
+        <!-- Staff -->
+        <rect x="72" y="20" width="4" height="82" rx="2" fill="#a06020"/>
+        <circle cx="74" cy="20" r="8" fill="${c3}" opacity="0.9"/>
+        <line x1="66" y1="14" x2="82" y2="14" stroke="${c3}" stroke-width="2"/>
+        <line x1="74" y1="6" x2="74" y2="22" stroke="${c3}" stroke-width="2"/>
+        <!-- Head -->
+        <circle cx="40" cy="44" r="14" fill="${c1}"/>
+        <!-- Wizard hat -->
+        <path d="M28,44 Q28,30 40,18 Q52,30 52,44 Z" fill="${c2}"/>
+        <rect x="26" y="42" width="28" height="4" rx="2" fill="${c2}"/>
+        <circle cx="40" cy="20" r="4" fill="${c3}"/>
+        <!-- Eyes -->
+        <circle cx="34" cy="44" r="4" fill="${c3}"/><circle cx="34" cy="44" r="2" fill="black"/>
+        <circle cx="46" cy="44" r="4" fill="${c3}"/><circle cx="46" cy="44" r="2" fill="black"/>
+      `}
+    </g>`,
+
+    // Stage 3: War Titan / Siege Behemoth
+    3: `<g ${sc}>
+      <!-- Shadow -->
+      <ellipse cx="40" cy="108" rx="24" ry="5" fill="${c2}" opacity="0.4"/>
+      <!-- Feet/boots -->
+      <rect x="20" y="100" width="16" height="8" rx="2" fill="${c2}"/>
+      <rect x="44" y="100" width="16" height="8" rx="2" fill="${c2}"/>
+      <!-- Legs -->
+      <rect x="22" y="78" width="14" height="24" rx="4" fill="${c1}"/>
+      <rect x="44" y="78" width="14" height="24" rx="4" fill="${c1}"/>
+      <!-- Spiked knees -->
+      <path d="M22,88 L14,84 L22,80 Z" fill="${c3}"/>
+      <path d="M58,88 L66,84 L58,80 Z" fill="${c3}"/>
+      <!-- Body — armored war titan -->
+      <rect x="16" y="46" width="48" height="36" rx="6" fill="${c1}"/>
+      <!-- Chest plate -->
+      <rect x="22" y="50" width="36" height="28" rx="4" fill="${c2}" opacity="0.6"/>
+      <!-- War emblem -->
+      <path d="M40,54 L44,62 L52,62 L46,67 L48,75 L40,70 L32,75 L34,67 L28,62 L36,62 Z" fill="${c3}" opacity="0.8"/>
+      <!-- Pauldrons — spiked -->
+      <path d="M2,44 L16,42 L18,60 L4,62 Z" fill="${c1}"/>
+      <path d="M78,44 L64,42 L62,60 L76,62 Z" fill="${c1}"/>
+      <!-- Shoulder spikes -->
+      <line x1="4" y1="44" x2="-4" y2="30" stroke="${c3}" stroke-width="3"/>
+      <line x1="10" y1="42" x2="4" y2="26" stroke="${c3}" stroke-width="3"/>
+      <line x1="76" y1="44" x2="84" y2="30" stroke="${c3}" stroke-width="3"/>
+      <line x1="70" y1="42" x2="76" y2="26" stroke="${c3}" stroke-width="3"/>
+      <!-- Arms -->
+      <rect x="2" y="48" width="12" height="6" rx="3" fill="${c1}"/>
+      <rect x="66" y="48" width="12" height="6" rx="3" fill="${c1}"/>
+      <!-- Massive war hammer (right) -->
+      <rect x="74" y="54" width="6" height="50" rx="3" fill="#806040"/>
+      <rect x="66" y="50" width="22" height="14" rx="4" fill="${c1}"/>
+      <rect x="68" y="52" width="18" height="10" rx="3" fill="${c3}" opacity="0.6"/>
+      <!-- Tower shield (left) -->
+      <path d="M-2,42 L-2,90 Q-2,100 10,104 Q22,100 22,90 L22,42 Z" fill="${c1}" stroke="${c3}" stroke-width="1.5"/>
+      <line x1="10" y1="44" x2="10" y2="102" stroke="${c3}" stroke-width="1.5" opacity="0.5"/>
+      <!-- Neck -->
+      <rect x="32" y="36" width="16" height="14" rx="4" fill="${c1}"/>
+      <!-- Horned helmet -->
+      <path d="M18,40 Q18,22 40,18 Q62,22 62,40 L62,50 L18,50 Z" fill="${c1}"/>
+      <rect x="20" y="44" width="40" height="4" rx="2" fill="${c2}" opacity="0.7"/>
+      <!-- Visor -->
+      <rect x="24" y="38" width="32" height="4" rx="1" fill="#100000"/>
+      <!-- War horns -->
+      <path d="M22,22 Q10,10 12,0 Q20,10 24,18 Z" fill="${c1}"/>
+      <path d="M58,22 Q70,10 68,0 Q60,10 56,18 Z" fill="${c1}"/>
+    </g>`,
+
+    // Stage 4: Cosmic Horror
+    4: `<g ${sc}>
+      <!-- Outer glow -->
+      <ellipse cx="40" cy="64" rx="32" ry="36" fill="${c1}" opacity="0.08"/>
+      <!-- Tentacles -->
+      <path d="M14,90 Q2,100 4,112 Q10,104 16,96 Z" fill="${c1}" opacity="0.7"/>
+      <path d="M20,96 Q8,110 12,120 Q18,110 22,100 Z" fill="${c1}" opacity="0.6"/>
+      <path d="M66,90 Q78,100 76,112 Q70,104 64,96 Z" fill="${c1}" opacity="0.7"/>
+      <path d="M60,96 Q72,110 68,120 Q62,110 58,100 Z" fill="${c1}" opacity="0.6"/>
+      <!-- Body — void sphere -->
+      <ellipse cx="40" cy="68" rx="26" ry="30" fill="${c2}"/>
+      <ellipse cx="40" cy="66" rx="22" ry="26" fill="${c1}" opacity="0.5"/>
+      <!-- Stars on body -->
+      ${Array.from({length:8},(_,i)=>`<circle cx="${20+i*7}" cy="${54+Math.sin(i)*12}" r="1" fill="${c3}" opacity="0.7"/>`).join('')}
+      <!-- Upper tentacles -->
+      <path d="M24,46 Q12,30 10,14 Q18,28 22,42 Z" fill="${c1}" opacity="0.8"/>
+      <path d="M56,46 Q68,30 70,14 Q62,28 58,42 Z" fill="${c1}" opacity="0.8"/>
+      <path d="M34,40 Q30,18 34,4 Q38,20 38,36 Z" fill="${c1}" opacity="0.7"/>
+      <path d="M46,40 Q50,18 46,4 Q42,20 42,36 Z" fill="${c1}" opacity="0.7"/>
+      <!-- Giant central eye -->
+      <ellipse cx="40" cy="62" rx="16" ry="14" fill="white"/>
+      <ellipse cx="40" cy="62" rx="12" ry="10" fill="${c1}"/>
+      <circle cx="40" cy="62" r="7" fill="${c2}"/>
+      <circle cx="40" cy="62" r="4" fill="black"/>
+      <circle cx="37" cy="59" r="2" fill="white" opacity="0.6"/>
+      <!-- Pupil slit -->
+      <rect x="38.5" y="56" width="3" height="12" rx="1.5" fill="black"/>
+      <!-- Small eyes -->
+      ${b ? `
+        <circle cx="22" cy="50" r="5" fill="white"/><circle cx="22" cy="50" r="3" fill="${c1}"/><circle cx="22" cy="50" r="1.5" fill="black"/>
+        <circle cx="58" cy="50" r="5" fill="white"/><circle cx="58" cy="50" r="3" fill="${c1}"/><circle cx="58" cy="50" r="1.5" fill="black"/>
+      ` : `
+        <circle cx="24" cy="52" r="3" fill="white"/><circle cx="24" cy="52" r="1.5" fill="${c2}"/>
+        <circle cx="56" cy="52" r="3" fill="white"/><circle cx="56" cy="52" r="1.5" fill="${c2}"/>
+      `}
+      <!-- Mouth — toothed maw -->
+      <path d="M26,76 Q40,88 54,76" fill="${c2}"/>
+      ${[0,1,2,3,4].map(i=>`<line x1="${27+i*5}" y1="76" x2="${29+i*5}" y2="84" stroke="${c3}" stroke-width="2"/>`).join('')}
+    </g>`,
+
+    // Stage 5: Reality Fragment / Divine Construct
+    5: `<g ${sc}>
+      <!-- Outer shards -->
+      <path d="M10,30 L20,50 L6,60 Z" fill="${c1}" opacity="0.4"/>
+      <path d="M70,30 L60,50 L74,60 Z" fill="${c1}" opacity="0.4"/>
+      <path d="M30,10 L38,30 L20,24 Z" fill="${c1}" opacity="0.3"/>
+      <path d="M50,10 L42,30 L60,24 Z" fill="${c1}" opacity="0.3"/>
+      <!-- Core body — geometric crystal -->
+      <path d="M40,18 L64,48 L56,88 L24,88 L16,48 Z" fill="${c2}" opacity="0.7"/>
+      <path d="M40,18 L64,48 L56,88 L24,88 L16,48 Z" fill="${c1}" opacity="0.3"/>
+      <!-- Crystal facets -->
+      <line x1="40" y1="18" x2="56" y2="88" stroke="${c3}" stroke-width="0.5" opacity="0.6"/>
+      <line x1="40" y1="18" x2="24" y2="88" stroke="${c3}" stroke-width="0.5" opacity="0.6"/>
+      <line x1="16" y1="48" x2="64" y2="48" stroke="${c3}" stroke-width="0.5" opacity="0.6"/>
+      <line x1="16" y1="68" x2="64" y2="68" stroke="${c3}" stroke-width="0.5" opacity="0.4"/>
+      <!-- Eyes — two glowing cores -->
+      <circle cx="34" cy="46" r="6" fill="${c3}" opacity="0.8"/>
+      <circle cx="46" cy="46" r="6" fill="${c3}" opacity="0.8"/>
+      <circle cx="34" cy="46" r="3" fill="white"/>
+      <circle cx="46" cy="46" r="3" fill="white"/>
+      <!-- Central rune -->
+      <text x="32" y="66" font-size="14" fill="${c3}" font-family="serif">✦</text>
+      <!-- Arms — crystalline blades -->
+      <path d="M16,50 L0,36 L4,50 L0,64 L16,50 Z" fill="${c1}" opacity="0.8"/>
+      <path d="M64,50 L80,36 L76,50 L80,64 L64,50 Z" fill="${c1}" opacity="0.8"/>
+      <!-- Crown spire -->
+      <path d="M34,18 L38,4 L40,14 L42,4 L46,18 Z" fill="${c3}" opacity="0.9"/>
+      <!-- Floating shards -->
+      <rect x="8" y="22" width="8" height="8" fill="${c1}" opacity="0.5" transform="rotate(30 12 26)"/>
+      <rect x="64" y="22" width="8" height="8" fill="${c1}" opacity="0.5" transform="rotate(-30 68 26)"/>
+    </g>`,
+
+    // Stage 6: Divine Absolute
+    6: `<g ${sc}>
+      <!-- Aura -->
+      <ellipse cx="40" cy="64" rx="36" ry="40" fill="${c1}" opacity="0.07"/>
+      <!-- Wings of fire -->
+      <path d="M20,50 Q-8,36 -12,54 Q-6,70 14,68 Q2,78 0,96 L18,80 Z" fill="${c1}" opacity="0.5"/>
+      <path d="M20,50 Q0,44 -4,56 Q0,66 16,64 Z" fill="${c3}" opacity="0.3"/>
+      <path d="M60,50 Q88,36 92,54 Q86,70 66,68 Q78,78 80,96 L62,80 Z" fill="${c1}" opacity="0.5"/>
+      <path d="M60,50 Q80,44 84,56 Q80,66 64,64 Z" fill="${c3}" opacity="0.3"/>
+      <!-- Legs -->
+      <rect x="26" y="82" width="12" height="24" rx="5" fill="${c2}"/>
+      <rect x="42" y="82" width="12" height="24" rx="5" fill="${c2}"/>
+      <!-- Body — armored absolute -->
+      <rect x="18" y="48" width="44" height="38" rx="7" fill="${c2}"/>
+      <ellipse cx="40" cy="66" rx="16" ry="16" fill="${c1}" opacity="0.4"/>
+      <!-- Chest seal -->
+      <circle cx="40" cy="66" r="10" fill="${c3}" opacity="0.2"/>
+      <circle cx="40" cy="66" r="6" fill="${c3}" opacity="0.4"/>
+      <circle cx="40" cy="66" r="3" fill="${c3}" opacity="0.8"/>
+      <!-- Multiple arms -->
+      <rect x="4" y="52" width="12" height="6" rx="3" fill="${c2}"/>
+      <rect x="64" y="52" width="12" height="6" rx="3" fill="${c2}"/>
+      <path d="M4,52 Q-6,40 -4,26 Q4,36 8,46 Z" fill="${c2}"/>
+      <path d="M76,52 Q86,40 84,26 Q76,36 72,46 Z" fill="${c2}"/>
+      <!-- Weapons — reality blades -->
+      <rect x="-8" y="20" width="5" height="40" rx="2.5" fill="${c3}" opacity="0.8"/>
+      <ellipse cx="-5" cy="20" rx="8" ry="4" fill="${c3}" opacity="0.6"/>
+      <rect x="83" y="20" width="5" height="40" rx="2.5" fill="${c3}" opacity="0.8"/>
+      <ellipse cx="86" cy="20" rx="8" ry="4" fill="${c3}" opacity="0.6"/>
+      <!-- Neck -->
+      <rect x="32" y="38" width="16" height="14" rx="5" fill="${c2}"/>
+      <!-- Head — divine mask -->
+      <ellipse cx="40" cy="28" rx="16" ry="18" fill="${c2}"/>
+      <!-- Crown -->
+      <path d="M26,18 L28,8 L34,16 L40,4 L46,16 L52,8 L54,18 Z" fill="${c3}" opacity="0.9"/>
+      <!-- Mask face -->
+      <rect x="26" y="24" width="28" height="6" rx="2" fill="#0a0000"/>
+      <rect x="28" y="25" width="10" height="4" rx="1" fill="${c3}" opacity="0.7"/>
+      <rect x="42" y="25" width="10" height="4" rx="1" fill="${c3}" opacity="0.7"/>
+    </g>`,
+
+    // Stage 7: End-of-all void entity
+    7: `<g ${sc}>
+      <!-- Swirling void -->
+      <ellipse cx="40" cy="64" rx="34" ry="36" fill="none" stroke="${c1}" stroke-width="0.5" opacity="0.2"/>
+      <ellipse cx="40" cy="64" rx="26" ry="28" fill="none" stroke="${c1}" stroke-width="0.8" opacity="0.3"/>
+      <!-- Void body -->
+      <ellipse cx="40" cy="64" rx="20" ry="36" fill="${c2}" opacity="0.8"/>
+      <!-- Dark core -->
+      <ellipse cx="40" cy="64" rx="12" ry="24" fill="#02020a"/>
+      <!-- Eye cluster — multiple void eyes -->
+      <circle cx="40" cy="50" r="10" fill="white" opacity="0.05"/>
+      <circle cx="40" cy="50" r="7" fill="white" opacity="0.1"/>
+      <circle cx="40" cy="50" r="4" fill="${c1}" opacity="0.7"/>
+      <circle cx="40" cy="50" r="2" fill="white"/>
+      <!-- Side eyes -->
+      <circle cx="28" cy="56" r="4" fill="${c1}" opacity="0.6"/><circle cx="28" cy="56" r="2" fill="white" opacity="0.8"/>
+      <circle cx="52" cy="56" r="4" fill="${c1}" opacity="0.6"/><circle cx="52" cy="56" r="2" fill="white" opacity="0.8"/>
+      <circle cx="32" cy="70" r="3" fill="${c1}" opacity="0.5"/><circle cx="32" cy="70" r="1.5" fill="white" opacity="0.7"/>
+      <circle cx="48" cy="70" r="3" fill="${c1}" opacity="0.5"/><circle cx="48" cy="70" r="1.5" fill="white" opacity="0.7"/>
+      <!-- Void tendrils -->
+      <path d="M20,44 Q4,30 2,14 Q12,28 18,42 Z" fill="${c1}" opacity="0.5"/>
+      <path d="M60,44 Q76,30 78,14 Q68,28 62,42 Z" fill="${c1}" opacity="0.5"/>
+      <path d="M22,80 Q6,88 2,104 Q14,92 22,80 Z" fill="${c1}" opacity="0.4"/>
+      <path d="M58,80 Q74,88 78,104 Q66,92 58,80 Z" fill="${c1}" opacity="0.4"/>
+      <!-- Mouth — void tear -->
+      <path d="M28,80 Q40,${b?96:90} 52,80" fill="${c2}" opacity="0.5"/>
+      <path d="M28,80 Q40,${b?96:90} 52,80" fill="none" stroke="${c1}" stroke-width="2"/>
+      <!-- Rune fragments -->
+      <text x="30" y="38" font-size="8" fill="${c1}" opacity="0.6" transform="rotate(-15 30 38)">✦</text>
+      <text x="46" y="44" font-size="6" fill="${c1}" opacity="0.5" transform="rotate(20 46 44)">◈</text>
+    </g>`
+  };
+  return monsters[stage] || monsters[1];
+}
+
+// --- Battle scene render functions ---
+function updateHeroSVG() {
+  const svg = document.getElementById('hero-svg');
+  if (!svg) return;
+  const col = STAGE_COLORS[G.stage];
+  svg.style.color = col;
+  svg.innerHTML = getHeroSVG(G.stage);
+  document.getElementById('hero-label').textContent = STAGE_NAMES[G.stage];
+  document.getElementById('hero-label').style.color = col;
+}
+
+function updateMonsterSVG() {
+  const svg = document.getElementById('monster-svg');
+  if (!svg) return;
+  const isBoss = G.wave % 10 === 0;
+  const variant = Math.floor(G.wave / 3);
+  svg.innerHTML = getMonsterSVG(G.stage, variant, isBoss);
+  const stageCols = STAGE_COLORS[G.stage];
+  svg.style.color = stageCols;
+  // Scale boss up
+  svg.style.width  = isBoss ? '90px' : '74px';
+  svg.style.height = isBoss ? '120px' : '104px';
+  const names = isBoss ? BOSS_NAMES[G.stage] : ENEMY_NAMES[G.stage];
+  document.getElementById('monster-label').textContent = names[variant % names.length];
+  document.getElementById('monster-label').style.color = isBoss ? 'var(--red)' : stageCols;
+}
+
+// Trigger hero attack animation + slash
+function triggerHeroAttack() {
+  const hero = document.getElementById('hero-svg');
+  const slash = document.getElementById('slash-fx');
+  if (!hero || !slash) return;
+  hero.classList.remove('hero-attack');
+  slash.classList.remove('slash-show');
+  // Force reflow to restart animation
+  void hero.offsetWidth;
+  void slash.offsetWidth;
+  hero.classList.add('hero-attack');
+  slash.classList.add('slash-show');
+  // Pick slash symbol by stage
+  const slashSyms = ['⚔','⚔','⚔','✦','✦','✦','◈','⟳'];
+  slash.textContent = slashSyms[G.stage] || '⚔';
+  const col = STAGE_COLORS[G.stage];
+  slash.style.color = col;
+  slash.style.textShadow = `0 0 16px ${col}`;
+  // Trigger monster hit
+  setTimeout(() => {
+    const mon = document.getElementById('monster-svg');
+    if (!mon) return;
+    mon.classList.remove('monster-hit');
+    void mon.offsetWidth;
+    mon.classList.add('monster-hit');
+  }, 120);
+  // Cleanup
+  setTimeout(() => {
+    hero.classList.remove('hero-attack');
+    const mon = document.getElementById('monster-svg');
+    if (mon) mon.classList.remove('monster-hit');
+  }, 450);
+}
+
+// Trigger monster death animation, then spawn new
+function triggerMonsterDeath(cb) {
+  const mon = document.getElementById('monster-svg');
+  if (!mon) { cb && cb(); return; }
+  mon.classList.remove('monster-hit');
+  void mon.offsetWidth;
+  mon.classList.add('monster-die');
+  setTimeout(() => {
+    mon.classList.remove('monster-die');
+    updateMonsterSVG();
+    cb && cb();
+  }, 520);
+}
+
+// Hero evolve flash
+function triggerHeroEvolve() {
+  const hero = document.getElementById('hero-svg');
+  if (!hero) return;
+  hero.classList.remove('hero-evolve');
+  void hero.offsetWidth;
+  updateHeroSVG();
+  hero.classList.add('hero-evolve');
+  setTimeout(() => hero.classList.remove('hero-evolve'), 900);
+}
+
 // ===== INIT =====
 function init() {
   const loaded = loadGame();
@@ -1793,6 +2707,10 @@ function init() {
     renderStageCenter();
     renderMetaPanel();
   }, 2000);
+
+  // Initialize battle scene characters
+  updateHeroSVG();
+  updateMonsterSVG();
 
   notify('Welcome to Ascension Loop! Click to begin your journey.');
 }
