@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ascension Loop</title>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ===== RESET & BASE ===== */
@@ -766,6 +767,23 @@ body {
   .panel { max-height: 200px; }
 }
 
+
+/* ===== PHASER CANVASES ===== */
+#stage-bg { background: #000 !important; }
+#stage-bg canvas {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 100% !important; height: 100% !important;
+}
+#monster-panel { background: transparent !important; }
+#monster-panel canvas {
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 100% !important; height: 100% !important;
+  pointer-events: none !important;
+}
+#monster-nameplate { z-index: 10 !important; }
+
 /* ===== GOTHIC FONT ===== */
 *, *::before, *::after {
   font-family: 'Cinzel', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
@@ -899,7 +917,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif !important; letter-spacin
 </style>
 </head>
 <body>
-<div id="stage-bg"><svg id="stage-bg-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice"></svg></div>
+<div id="stage-bg"></div>
 <div id="game-wrap">
   <!-- HEADER -->
   <div id="header">
@@ -972,7 +990,7 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif !important; letter-spacin
           <div id="hero-gear-row"></div>
         </div>
         <div id="monster-panel">
-          <svg id="monster-svg" viewBox="0 0 160 190" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice"></svg>
+          
           <div id="monster-nameplate">
             <span id="boss-badge-portrait">⚠ BOSS</span>
             <span id="monster-name-text">Slime</span>
@@ -1235,7 +1253,7 @@ const BOSS_NAMES = {
 
 
 // ===== STAGE BACKGROUNDS =====
-function getStageBG(stage) {
+function getStageBG_REMOVED() {
   const W=800, H=500;
   const defs = (content) => `<defs>${content}</defs>`;
   const LG = (id,x1,y1,x2,y2,...stops) => {
@@ -1427,13 +1445,11 @@ function getStageBG(stage) {
     });
     return s;
   }
-  return '<rect width="800" height="500" fill="#020008"/>';
+  return '';
 }
 
 function updateStageBG() {
-  const el = document.getElementById('stage-bg-svg');
-  if (!el) return;
-  el.innerHTML = getStageBG(G.stage);
+  if (window.PhaserBattle) PhaserBattle.setStage(G.stage);
 }
 
 // ===== WAVE SYSTEM =====
@@ -3217,9 +3233,7 @@ function getMonsterSVG(stage, waveNum, isBoss) {
     }
   }
 
-  // Fallback
-  d+='</defs>';
-  return d+'<rect width="160" height="190" fill="#050510"/><circle cx="80" cy="95" r="40" fill="#101030"/>';
+  return '';
 }
 
 
@@ -3247,11 +3261,9 @@ function updateHeroSVG() {
 }
 
 function updateMonsterSVG() {
-  const svg = document.getElementById('monster-svg');
-  if (!svg) return;
   const isBoss = G.wave % 10 === 0;
   const variant = Math.floor(G.wave / 3);
-  svg.innerHTML = getMonsterSVG(G.stage, variant, isBoss);
+  if (window.PhaserBattle) PhaserBattle.setMonster(G.stage, variant, isBoss);
   const names = isBoss ? BOSS_NAMES[G.stage] : ENEMY_NAMES[G.stage];
   const nameEl = document.getElementById('monster-name-text');
   const bossEl = document.getElementById('boss-badge-portrait');
@@ -3262,33 +3274,22 @@ function updateMonsterSVG() {
 // Hero strike animation
 function triggerHeroAttack() {
   const hero = document.getElementById('hero-svg');
-  if (!hero) return;
-  hero.classList.remove('hero-strike');
-  void hero.offsetWidth;
-  hero.classList.add('hero-strike');
-  setTimeout(() => {
-    const mon = document.getElementById('monster-svg');
-    if (mon) { mon.classList.remove('monster-hit'); void mon.offsetWidth; mon.classList.add('monster-hit'); }
-  }, 100);
-  setTimeout(() => {
+  if (hero) {
     hero.classList.remove('hero-strike');
-    const mon = document.getElementById('monster-svg');
-    if (mon) mon.classList.remove('monster-hit');
-  }, 420);
+    void hero.offsetWidth;
+    hero.classList.add('hero-strike');
+    setTimeout(() => hero.classList.remove('hero-strike'), 420);
+  }
+  setTimeout(() => { if (window.PhaserBattle) PhaserBattle.playHit(); }, 100);
 }
 
-// Monster death animation
+// Monster death animation (Phaser)
 function triggerMonsterDeath(cb) {
-  const mon = document.getElementById('monster-svg');
-  if (!mon) { cb && cb(); return; }
-  mon.classList.remove('monster-hit');
-  void mon.offsetWidth;
-  mon.classList.add('monster-die');
-  setTimeout(() => {
-    mon.classList.remove('monster-die');
-    updateMonsterSVG();
-    cb && cb();
-  }, 200);
+  if (window.PhaserBattle) {
+    PhaserBattle.playDeath(() => { updateMonsterSVG(); cb && cb(); });
+  } else {
+    updateMonsterSVG(); cb && cb();
+  }
 }
 
 // Hero stage-up flash
@@ -3354,6 +3355,767 @@ function init() {
 }
 
 // Start when DOM ready
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASER INTEGRATION — Background + Monster Scenes
+// ═══════════════════════════════════════════════════════════════════════════
+(function() {
+  let _bgScene = null;
+  let _monScene = null;
+
+  // Pending state (set before Phaser scenes are ready)
+  window._pendingStage = 1;
+  window._pendingMonster = { s: 1, v: 0, b: false };
+
+  window.PhaserBattle = {
+    setStage(s) {
+      window._pendingStage = s;
+      if (_bgScene) _bgScene.setStage(s);
+    },
+    setMonster(s, v, b) {
+      window._pendingMonster = { s, v, b };
+      if (_monScene) _monScene.setMonster(s, v, b);
+    },
+    playHit() { if (_monScene) _monScene.playHit(); },
+    playDeath(cb) { if (_monScene) _monScene.playDeath(cb); else { cb && cb(); } },
+  };
+
+  // ── BG SCENE ────────────────────────────────────────────────────────────
+  class BgScene extends Phaser.Scene {
+    constructor() { super('BgScene'); }
+
+    create() {
+      _bgScene = this;
+      this.t = 0;
+      this.stage = 1;
+      this.staticGfx = this.add.graphics();
+      this.animGfx = this.add.graphics();
+      this.particles = [];
+      this.setStage(window._pendingStage || 1);
+    }
+
+    update(_, delta) {
+      this.t += delta / 1000;
+      this.animGfx.clear();
+      this._drawAnim();
+      this._updateParticles(delta / 1000);
+    }
+
+    setStage(s) {
+      this.stage = s;
+      this.particles = [];
+      this._drawStatic();
+      this._spawnParticles();
+    }
+
+    _drawStatic() {
+      const g = this.staticGfx, W = this.scale.width, H = this.scale.height;
+      g.clear();
+      const sky = [
+        [0x3a70a0,0x87ceeb,0x5aaa40,0x2a6018], // S1 field
+        [0x04081a,0x080e24,0x181828,0x101018], // S2 cave
+        [0x010108,0x050215,0x090615,0x050010], // S3 deep cave
+        [0x050308,0x0a0810,0x120e18,0x0a0810], // S4 dungeon
+        [0x1a0000,0x0d0000,0x200500,0x150000], // S5 hell
+        [0x000010,0x000020,0x000005,0x000000], // S6 cosmos
+        [0x000000,0x000000,0x020205,0x000000], // S7 void
+      ][this.stage - 1];
+      g.fillGradientStyle(sky[0], sky[1], sky[2], sky[3], 1);
+      g.fillRect(0, 0, W, H);
+
+      switch (this.stage) {
+        case 1: this._s1Static(g, W, H); break;
+        case 2: this._s2Static(g, W, H); break;
+        case 3: this._s3Static(g, W, H); break;
+        case 4: this._s4Static(g, W, H); break;
+        case 5: this._s5Static(g, W, H); break;
+        case 6: this._s6Static(g, W, H); break;
+        case 7: this._s7Static(g, W, H); break;
+      }
+    }
+
+    _drawAnim() {
+      const g = this.animGfx, t = this.t, W = this.scale.width, H = this.scale.height;
+      switch (this.stage) {
+        case 1: this._s1Anim(g,W,H,t); break;
+        case 2: this._s2Anim(g,W,H,t); break;
+        case 3: this._s3Anim(g,W,H,t); break;
+        case 4: this._s4Anim(g,W,H,t); break;
+        case 5: this._s5Anim(g,W,H,t); break;
+        case 6: this._s6Anim(g,W,H,t); break;
+        case 7: this._s7Anim(g,W,H,t); break;
+      }
+    }
+
+    // ── Stage 1: Rolling Meadow ──────────────────────────────────────────
+    _s1Static(g, W, H) {
+      // Far hills
+      g.fillStyle(0x2a4820);
+      g.fillEllipse(W*0.2, H*0.72, W*0.6, H*0.28);
+      g.fillEllipse(W*0.75, H*0.74, W*0.5, H*0.22);
+      // Castle silhouette
+      const cx = W*0.15, cby = H*0.62;
+      g.fillStyle(0x182010);
+      g.fillRect(cx-22, cby, 44, H*0.4);
+      g.fillRect(cx-28, cby-14, 56, 14);
+      for(let i=0;i<6;i++) g.fillRect(cx-28+i*10, cby-24, 7, 11);
+      g.fillRect(cx-9, cby-50, 18, 56);
+      g.fillTriangle(cx-11, cby-50, cx+11, cby-50, cx, cby-70);
+      // Near hills + ground
+      g.fillStyle(0x3a6828);
+      g.fillEllipse(W*0.5, H*0.82, W*0.9, H*0.28);
+      g.fillStyle(0x2d5520);
+      g.fillRect(0, H*0.86, W, H*0.14);
+    }
+    _s1Anim(g, W, H, t) {
+      // Clouds
+      [{x:0.08,y:0.14,w:130,spd:0.025},{x:0.42,y:0.09,w:100,spd:0.018},{x:0.72,y:0.18,w:160,spd:0.03}]
+        .forEach(c => {
+          const cx = ((c.x + t*c.spd) % 1.4 - 0.2) * W;
+          g.fillStyle(0xffffff, 0.85);
+          g.fillEllipse(cx, H*c.y, c.w, 38);
+          g.fillEllipse(cx-32, H*c.y+6, 80, 28);
+          g.fillEllipse(cx+42, H*c.y+5, 72, 26);
+        });
+      // Sun + rays
+      g.fillStyle(0xffff80, 0.9); g.fillCircle(W*0.87, H*0.1, 32);
+      for(let i=0;i<8;i++) {
+        const a = (i/8)*Math.PI*2 + t*0.15;
+        g.lineStyle(2, 0xffff80, 0.25+Math.sin(t+i)*0.1);
+        g.lineBetween(W*0.87, H*0.1, W*0.87+Math.cos(a)*56, H*0.1+Math.sin(a)*56);
+      }
+    }
+
+    // ── Stage 2: Underground Cave ─────────────────────────────────────────
+    _s2Static(g, W, H) {
+      // Stone wall tiles
+      g.fillStyle(0x252535);
+      for(let row=0;row<Math.ceil(H/40);row++) {
+        const off = (row%2)*40;
+        for(let col=0;col<Math.ceil(W/80)+1;col++) {
+          g.fillRect(col*80-off+2, row*40+2, 75, 35);
+        }
+      }
+      g.lineStyle(1, 0x0a0a15, 0.8);
+      for(let row=0;row<Math.ceil(H/40)+1;row++) {
+        const off=(row%2)*40;
+        for(let col=0;col<Math.ceil(W/80)+1;col++) g.strokeRect(col*80-off, row*40, 80, 40);
+      }
+      // Stalactites
+      g.fillStyle(0x18182a);
+      for(let i=0;i<14;i++) {
+        const sx = W*(i+0.5)/14;
+        const h = 35+Math.sin(i*1.9)*20;
+        g.fillTriangle(sx-14, 0, sx+14, 0, sx, h);
+      }
+      // Stalagmites
+      for(let i=0;i<9;i++) {
+        const sx = W*(i+0.5)/9;
+        const h = 18+Math.cos(i*2.3)*12;
+        g.fillTriangle(sx-9, H, sx+9, H, sx, H-h);
+      }
+      // Torch brackets
+      g.fillStyle(0x604020);
+      g.fillRect(W*0.08-4, H*0.42, 8, 28);
+      g.fillRect(W*0.92-4, H*0.42, 8, 28);
+    }
+    _s2Anim(g, W, H, t) {
+      [W*0.08, W*0.92].forEach(tx => {
+        const fl = 0.8 + Math.sin(t*9+tx)*0.2;
+        const ty = H*0.42;
+        g.fillStyle(0xff4400, 0.25*fl); g.fillEllipse(tx, ty-16, 32, 52);
+        g.fillStyle(0xff8800, 0.5*fl);  g.fillEllipse(tx, ty-9, 20, 36);
+        g.fillStyle(0xffcc00, 0.75*fl); g.fillEllipse(tx, ty-2, 10, 20);
+        g.fillStyle(0xffffff, 0.5*fl);  g.fillCircle(tx, ty, 3);
+        g.fillStyle(0xff6600, 0.04*fl); g.fillEllipse(tx, ty, W*0.35, H*0.35);
+      });
+      // Drips
+      for(let i=0;i<6;i++) {
+        const ph = (t*2.2 + i*0.75) % 1;
+        const dx = W*(0.1+i*0.16);
+        g.fillStyle(0x5599cc, ph*0.7); g.fillCircle(dx, ph*H*0.55+5, 2.5);
+      }
+    }
+
+    // ── Stage 3: Crystal Cavern ───────────────────────────────────────────
+    _s3Static(g, W, H) {
+      // Crystal clusters
+      const crys = [[0.05,0x00ffcc],[0.14,0x0088ff],[0.85,0x4400ff],[0.94,0x00ffcc],[0.5,0x0088ff]];
+      crys.forEach(([xf,cc]) => {
+        const cx = W*xf, s = 55+Math.sin(xf*10)*20;
+        g.fillStyle(cc, 0.08); g.fillEllipse(cx, H*0.95, s*2.5, s*1.5);
+        g.fillStyle(cc, 0.65);
+        g.fillTriangle(cx-s*0.4, H, cx+s*0.4, H, cx, H-s*1.6);
+        g.fillTriangle(cx-s*0.2, H, cx+s*0.3, H, cx+s*0.1, H-s*0.85);
+        g.fillStyle(0xffffff, 0.25);
+        g.fillTriangle(cx-s*0.12, H-s*0.25, cx, H-s*1.5, cx-s*0.08, H-s*0.55);
+      });
+      g.fillStyle(0x050510); g.fillRect(0, H*0.9, W, H*0.1);
+      // Background glow pools
+      g.fillStyle(0x002244, 0.3); g.fillEllipse(W*0.3, H*0.7, 200, 80);
+      g.fillStyle(0x004433, 0.3); g.fillEllipse(W*0.7, H*0.65, 180, 70);
+    }
+    _s3Anim(g, W, H, t) {
+      // Floating bioluminescent particles
+      for(let i=0;i<22;i++) {
+        const px = W*(((i*0.391+t*0.04+i*0.07)%1.0+1)%1);
+        const py = H*(((i*0.619+t*0.025*(i%3+1))%0.85)+0.08);
+        const br = 0.4+Math.sin(t*2.5+i)*0.5;
+        const cc = [0x00ffcc,0x0088ff,0x8800ff][i%3];
+        g.fillStyle(cc, br*0.65); g.fillCircle(px, py, 2.2+Math.sin(t*3+i)*0.8);
+      }
+      // Crystal pulse overlay
+      g.fillStyle(0x00ffcc, 0.02+Math.sin(t*1.5)*0.015); g.fillRect(0,0,W,H);
+    }
+
+    // ── Stage 4: Dark Dungeon ─────────────────────────────────────────────
+    _s4Static(g, W, H) {
+      // Brick walls
+      g.fillStyle(0x181418);
+      for(let row=0;row<Math.ceil(H/35);row++) {
+        const off=(row%2)*45;
+        for(let col=0;col<Math.ceil(W/90)+1;col++) g.fillRect(col*90-off+1,row*35+1,88,33);
+      }
+      g.lineStyle(1,0x0a080a,0.9);
+      for(let row=0;row<Math.ceil(H/35)+1;row++) {
+        const off=(row%2)*45;
+        for(let col=0;col<Math.ceil(W/90)+1;col++) g.strokeRect(col*90-off,row*35,90,35);
+      }
+      // Stone floor
+      g.fillStyle(0x151015); g.fillRect(0,H*0.8,W,H*0.2);
+      g.lineStyle(1,0x201820);
+      for(let x=0;x<W;x+=55) g.lineBetween(x,H*0.8,x,H);
+      for(let y=H*0.8;y<H;y+=35) g.lineBetween(0,y,W,y);
+      // Chains
+      g.lineStyle(3,0x404040);
+      for(let i=0;i<3;i++) {
+        const cx = W*(0.18+i*0.32);
+        for(let j=0;j<6;j++) { g.fillStyle(0x505050); g.fillEllipse(cx, j*28, 10, 16); }
+      }
+      // Skull decoration
+      g.fillStyle(0xd0c8b0);
+      g.fillCircle(W*0.12, H*0.38, 13);
+      g.fillStyle(0x0a080a);
+      g.fillEllipse(W*0.12-5, H*0.38-2, 7,7); g.fillEllipse(W*0.12+5, H*0.38-2, 7,7);
+      for(let i=0;i<4;i++) g.fillRect(W*0.12-6+i*4, H*0.38+8, 3,6);
+    }
+    _s4Anim(g, W, H, t) {
+      [W*0.04, W*0.96].forEach(tx => {
+        const fl = 0.8+Math.sin(t*7+tx)*0.2;
+        const ty = H*0.48;
+        g.fillStyle(0x00ff40,0.18*fl); g.fillEllipse(tx,ty-14,28,48);
+        g.fillStyle(0x40ff20,0.4*fl);  g.fillEllipse(tx,ty-7,16,30);
+        g.fillStyle(0xccff80,0.7*fl);  g.fillEllipse(tx,ty-2,7,15);
+        g.fillStyle(0x003300,0.03*fl); g.fillEllipse(tx,ty,W*0.45,H*0.45);
+      });
+      // Fog wisps
+      for(let i=0;i<5;i++) {
+        const fx = (W*(i*0.3+t*0.025*(i%2?1:-1)))%W;
+        g.fillStyle(0x100810, 0.18); g.fillEllipse(fx, H*0.88, 220, 42);
+      }
+    }
+
+    // ── Stage 5: Hellscape ────────────────────────────────────────────────
+    _s5Static(g, W, H) {
+      // Lava glow
+      g.fillStyle(0x200000); g.fillRect(0,H*0.72,W,H*0.28);
+      g.fillGradientStyle(0x200000,0x200000,0xff3000,0xff5000,1);
+      g.fillRect(0,H*0.8,W,H*0.2);
+      // Rock spires
+      g.fillStyle(0x0d0000);
+      [{x:0.05,h:0.42},{x:0.17,h:0.58},{x:0.81,h:0.46},{x:0.93,h:0.62}].forEach(s => {
+        const sx=W*s.x;
+        g.fillTriangle(sx-28,H,sx+28,H,sx,H*(1-s.h));
+        g.fillTriangle(sx-16,H,sx+14,H,sx+7,H*(1-s.h+0.06));
+      });
+      // Background demon silhouette
+      g.fillStyle(0x100000,0.45);
+      g.fillEllipse(W*0.85,H*0.52,58,78);
+      g.fillTriangle(W*0.82,H*0.32,W*0.84,H*0.16,W*0.80,H*0.34);
+      g.fillTriangle(W*0.88,H*0.32,W*0.86,H*0.16,W*0.90,H*0.34);
+    }
+    _s5Anim(g, W, H, t) {
+      // Lava surface
+      for(let i=0;i<11;i++) {
+        const lx=W*(i*0.11+(t*0.018*(i%2?1:-1))%1);
+        const p=0.28+Math.sin(t*2+i)*0.18;
+        g.fillStyle(0xff5000,p*0.55); g.fillEllipse(lx,H*0.84,85,22);
+      }
+      // Fire columns
+      for(let col=0;col<4;col++) {
+        const fx=W*(0.08+col*0.28);
+        for(let i=0;i<7;i++) {
+          const fi=(t*2.5+i*0.18+col)%1;
+          const fy=H*0.8-fi*H*0.38;
+          const fsz=22*(1-fi)+5;
+          g.fillStyle(i%2?0xff3000:0xff7000,(1-fi)*0.55);
+          g.fillEllipse(fx+Math.sin(t*3+i)*9, fy, fsz, fsz*1.6);
+        }
+      }
+      // Ash particles
+      for(let i=0;i<18;i++) {
+        const ax=W*((i*0.179+t*0.025)%1);
+        const ay=H*((i*0.137+t*0.013)%0.72);
+        g.fillStyle(0x404040,0.38); g.fillCircle(ax,ay,2);
+      }
+    }
+
+    // ── Stage 6: Deep Space ───────────────────────────────────────────────
+    _s6Static(g, W, H) {
+      // Static star field
+      for(let i=0;i<140;i++) {
+        const px=((Math.sin(i*237.1)*W)%W+W)%W;
+        const py=((Math.cos(i*137.5)*H)%H+H)%H;
+        const br=0.25+((i*71)%100)/100*0.75;
+        g.fillStyle(0xffffff,br); g.fillCircle(px,py,i%10<2?2:1);
+      }
+      // Nebula clouds
+      [{x:0.22,y:0.3,rx:160,ry:90,c:0x4400ff,a:0.07},{x:0.7,y:0.6,rx:190,ry:110,c:0xff0088,a:0.055},{x:0.5,y:0.2,rx:200,ry:75,c:0x00ffff,a:0.045}]
+        .forEach(n=>{
+          g.fillStyle(n.c,n.a); g.fillEllipse(W*n.x,H*n.y,n.rx,n.ry);
+          g.fillStyle(n.c,n.a*0.45); g.fillEllipse(W*n.x+20,H*n.y+10,n.rx*1.4,n.ry*1.4);
+        });
+      // Planets
+      g.fillStyle(0x8844aa,0.72); g.fillCircle(W*0.82,H*0.18,27);
+      g.fillStyle(0x664488,0.45); g.fillEllipse(W*0.82,H*0.18,88,14);
+      g.fillStyle(0x8844aa,0.72); g.fillCircle(W*0.82,H*0.18,27);
+      g.fillStyle(0x4488ff,0.62); g.fillCircle(W*0.14,H*0.72,16);
+    }
+    _s6Anim(g, W, H, t) {
+      // Twinkling stars
+      for(let i=0;i<35;i++) {
+        const px=((Math.sin(i*237.1)*W)%W+W)%W;
+        const py=((Math.cos(i*137.5)*H)%H+H)%H;
+        const tw=0.4+Math.sin(t*2.5+i*0.7)*0.6;
+        g.fillStyle(0xffffff,tw); g.fillCircle(px,py,1.5);
+      }
+      // Shooting star
+      const sst=(t*0.28)%1;
+      if(sst<0.12) {
+        const ss=sst/0.12;
+        g.lineStyle(2,0xffffff,1-ss);
+        g.lineBetween(W*0.9-ss*W*0.55,H*0.08+ss*H*0.28,W*0.9-ss*W*0.55+28,H*0.08+ss*H*0.28-14);
+      }
+      // Nebula shimmer
+      g.fillStyle(0x8800ff,0.025+Math.sin(t*0.6)*0.018); g.fillEllipse(W*0.22,H*0.3,210,100);
+    }
+
+    // ── Stage 7: The Void ─────────────────────────────────────────────────
+    _s7Static(g, W, H) {
+      g.fillStyle(0x000000); g.fillRect(0,0,W,H);
+      // Geometric grid
+      g.lineStyle(1,0x0000ff,0.07);
+      for(let x=0;x<W;x+=60) g.lineBetween(x,0,x,H);
+      for(let y=0;y<H;y+=60) g.lineBetween(0,y,W,y);
+      // Radiating cracks
+      const cx=W/2, cy=H/2;
+      g.lineStyle(1,0x8080ff,0.18);
+      for(let i=0;i<16;i++) {
+        const a=(i/16)*Math.PI*2;
+        const mx=cx+Math.cos(a+0.1)*Math.max(W,H)*0.28, my=cy+Math.sin(a+0.1)*Math.max(W,H)*0.28;
+        g.lineBetween(cx,cy,mx,my);
+        g.lineBetween(mx,my,cx+Math.cos(a)*Math.max(W,H)*0.9,cy+Math.sin(a)*Math.max(W,H)*0.9);
+      }
+    }
+    _s7Anim(g, W, H, t) {
+      const cx=W/2, cy=H/2;
+      // Pulsing cracks
+      const p=0.08+Math.sin(t*2)*0.08;
+      g.lineStyle(1,0xffffff,p);
+      for(let i=0;i<16;i++) {
+        const a=(i/16)*Math.PI*2;
+        g.lineBetween(cx,cy,cx+Math.cos(a)*Math.max(W,H),cy+Math.sin(a)*Math.max(W,H));
+      }
+      // Absorbed particles
+      for(let i=0;i<18;i++) {
+        const fi=(t*1.3+i/18)%1;
+        const a=(i/18)*Math.PI*2+t*0.18;
+        const r=(1-fi)*W*0.48;
+        g.fillStyle(0x8080ff,(1-fi)*0.55); g.fillCircle(cx+Math.cos(a)*r,cy+Math.sin(a)*r,3*(1-fi)+1);
+      }
+      // Central glow
+      g.fillStyle(0x4040ff,0.04+Math.sin(t*3)*0.03); g.fillEllipse(cx,cy,280,280);
+    }
+
+    // ── Particles ────────────────────────────────────────────────────────
+    _spawnParticles() {
+      const W=this.scale.width, H=this.scale.height;
+      const cfgs=[
+        {n:8,c:0xffffff,vx:0.012,vy:-0.025,sz:1.5},
+        {n:10,c:0x4488cc,vx:0,vy:-0.03,sz:2},
+        {n:20,c:0x00ffcc,vx:0,vy:-0.015,sz:1.8},
+        {n:6,c:0x404040,vx:0.01,vy:-0.01,sz:3},
+        {n:16,c:0xff4000,vx:0,vy:-0.04,sz:2.5},
+        {n:30,c:0x8888ff,vx:0.002,vy:0,sz:1},
+        {n:14,c:0x8080ff,vx:0.015,vy:-0.02,sz:2},
+      ][this.stage-1];
+      this.particles=[];
+      for(let i=0;i<cfgs.n;i++) {
+        this.particles.push({
+          x:Math.random()*W, y:H*0.9+Math.random()*H*0.1,
+          vx:(Math.random()-0.5)*cfgs.vx*W, vy:-cfgs.vy*H*(0.4+Math.random()*0.8),
+          color:cfgs.c, size:cfgs.sz*(0.5+Math.random()), life:Math.random(),
+        });
+      }
+    }
+
+    _updateParticles(dt) {
+      const W=this.scale.width, H=this.scale.height, g=this.animGfx;
+      this.particles.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy;
+        p.life=Math.min(1,p.life+dt*0.3);
+        if(p.y<-10||p.x<-20||p.x>W+20) { p.x=Math.random()*W; p.y=H*0.95; p.life=0; }
+        const a=Math.min(p.life,(1-p.life)*3)*0.6;
+        if(a>0) { g.fillStyle(p.color,a); g.fillCircle(p.x,p.y,p.size); }
+      });
+    }
+  }
+
+  // ── MONSTER SCENE ────────────────────────────────────────────────────────
+  class MonsterScene extends Phaser.Scene {
+    constructor() { super('MonsterScene'); }
+
+    create() {
+      _monScene = this;
+      this.g = this.add.graphics();
+      this.t = 0; this.stage=1; this.variant=0; this.isBoss=false;
+      this.hitFlash=0; this.dying=false; this.deathParts=[];
+      const pm = window._pendingMonster||{s:1,v:0,b:false};
+      this.setMonster(pm.s, pm.v, pm.b);
+    }
+
+    update(_, delta) {
+      const dt=delta/1000;
+      this.t+=dt;
+      if(this.hitFlash>0) this.hitFlash=Math.max(0,this.hitFlash-dt*8);
+      const g=this.g; g.clear();
+      const W=this.scale.width, H=this.scale.height;
+      const cx=W/2, cy=H*0.48;
+      if(this.dying) { this._updateDeath(dt); return; }
+      this._drawMonster(g,cx,cy,this.t,this.isBoss);
+      if(this.hitFlash>0) {
+        g.fillStyle(0xff0000,this.hitFlash*0.35);
+        g.fillRect(0,0,W,H);
+      }
+    }
+
+    setMonster(s,v,b) { this.stage=s; this.variant=v; this.isBoss=b; this.dying=false; this.deathParts=[]; }
+    playHit() { this.hitFlash=1; this.cameras.main.shake(90,0.009); }
+
+    playDeath(cb) {
+      const W=this.scale.width,H=this.scale.height;
+      this.dying=true; this.deathParts=[];
+      const colors=[0x60ff60,0x4060ff,0x00ffcc,0x9040ff,0xff4000,0x8000ff,0xffffff];
+      const col=colors[(this.stage-1)%colors.length];
+      for(let i=0;i<28;i++) {
+        this.deathParts.push({
+          x:W/2+(Math.random()-.5)*70, y:H*0.48+(Math.random()-.5)*70,
+          vx:(Math.random()-.5)*340, vy:(Math.random()-.5)*340-90,
+          life:1, color:col, size:4+Math.random()*7,
+        });
+      }
+      this.time.delayedCall(380, ()=>{ this.dying=false; cb&&cb(); });
+    }
+
+    _updateDeath(dt) {
+      const g=this.g;
+      this.deathParts.forEach(p=>{
+        p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=220*dt; p.life-=dt*2.4;
+        if(p.life>0){g.fillStyle(p.color,p.life);g.fillCircle(p.x,p.y,p.size*p.life);}
+      });
+    }
+
+    _drawMonster(g,cx,cy,t,boss) {
+      const sc=boss?1.22:1.0;
+      switch(this.stage){
+        case 1: this._slime(g,cx,cy,t,boss,sc); break;
+        case 2: this._bat(g,cx,cy,t,boss,sc); break;
+        case 3: this._crystalGolem(g,cx,cy,t,boss,sc); break;
+        case 4: this._wraith(g,cx,cy,t,boss,sc); break;
+        case 5: this._demon(g,cx,cy,t,boss,sc); break;
+        case 6: this._voidEntity(g,cx,cy,t,boss,sc); break;
+        case 7: this._singularity(g,cx,cy,t,boss,sc); break;
+      }
+    }
+
+    // ── S1: Slime ──────────────────────────────────────────────────────────
+    _slime(g,cx,cy,t,boss,sc){
+      const bob=Math.sin(t*2.2)*7, sq=1+Math.sin(t*2.2)*0.06;
+      const rx=58*sc*sq, ry=44*sc/sq, y=cy+22+bob;
+      // Shadow
+      g.fillStyle(0x000000,0.25); g.fillEllipse(cx,cy+70*sc,rx*1.6,16);
+      // Glow
+      g.fillStyle(boss?0x20ff00:0x20c800,0.22); g.fillEllipse(cx,y,rx*2+20,ry*2+20);
+      // Body
+      g.fillStyle(boss?0x30c000:0x52d035); g.fillEllipse(cx,y,rx*2,ry*2);
+      // Highlight
+      g.fillStyle(0xc0ff80,0.55); g.fillEllipse(cx-rx*0.2,y-ry*0.3,rx*0.75,ry*0.52);
+      // Eyes
+      const ey=y-ry*0.1, blink=Math.sin(t*1.15)>0.96?0.08:1;
+      g.fillStyle(0xffffff); g.fillCircle(cx-18*sc,ey,12*sc); g.fillCircle(cx+18*sc,ey,12*sc);
+      g.fillStyle(boss?0xff2020:0x204080);
+      g.fillCircle(cx-16*sc,ey,6*sc*blink); g.fillCircle(cx+20*sc,ey,6*sc*blink);
+      g.fillStyle(0xffffff,0.8); g.fillCircle(cx-14*sc,ey-2,2*sc); g.fillCircle(cx+22*sc,ey-2,2*sc);
+      if(boss){
+        g.fillStyle(0x40ff00,0.9);
+        for(let i=0;i<5;i++){
+          const a=(-0.55+i*0.28)*Math.PI, px=cx+Math.cos(a)*rx*0.92, py=y+Math.sin(a)*ry*0.88;
+          g.fillTriangle(px-7,py,px+7,py,px,py-20);
+        }
+      }
+    }
+
+    // ── S2: Cave Bat ───────────────────────────────────────────────────────
+    _bat(g,cx,cy,t,boss,sc){
+      const flap=Math.sin(t*9)*26*sc, bob=Math.sin(t*2)*5, y=cy+bob;
+      // Wings
+      const wc=boss?0x600060:0x303050;
+      g.fillStyle(wc);
+      g.fillTriangle(cx-20*sc,y,cx-85*sc,y-flap,cx-55*sc,y+32*sc);
+      g.fillTriangle(cx-22*sc,y-5,cx-85*sc,y-flap,cx-45*sc,y-flap-8);
+      g.fillTriangle(cx+20*sc,y,cx+85*sc,y-flap,cx+55*sc,y+32*sc);
+      g.fillTriangle(cx+22*sc,y-5,cx+85*sc,y-flap,cx+45*sc,y-flap-8);
+      // Wing veins
+      g.lineStyle(1,boss?0xa000a0:0x6060a0,0.35);
+      g.lineBetween(cx-20*sc,y,cx-85*sc,y-flap); g.lineBetween(cx+20*sc,y,cx+85*sc,y-flap);
+      // Body
+      g.fillStyle(boss?0x500040:0x252540); g.fillEllipse(cx,y,50*sc,62*sc);
+      // Ears
+      g.fillStyle(boss?0x800060:0x404060);
+      g.fillTriangle(cx-15*sc,y-28*sc,cx-5*sc,y-52*sc,cx-3*sc,y-28*sc);
+      g.fillTriangle(cx+15*sc,y-28*sc,cx+5*sc,y-52*sc,cx+3*sc,y-28*sc);
+      g.fillStyle(boss?0xff80ff:0xff8080,0.55);
+      g.fillTriangle(cx-13*sc,y-30*sc,cx-6*sc,y-48*sc,cx-4*sc,y-30*sc);
+      g.fillTriangle(cx+13*sc,y-30*sc,cx+6*sc,y-48*sc,cx+4*sc,y-30*sc);
+      // Eyes
+      const ey=y-6;
+      g.fillStyle(boss?0xff4000:0xffaa00); g.fillCircle(cx-10*sc,ey,8*sc); g.fillCircle(cx+10*sc,ey,8*sc);
+      g.fillStyle(0x000000); g.fillCircle(cx-10*sc,ey,4*sc); g.fillCircle(cx+10*sc,ey,4*sc);
+      g.fillStyle(0xffffff,0.75); g.fillCircle(cx-8*sc,ey-2,2*sc); g.fillCircle(cx+12*sc,ey-2,2*sc);
+      // Fangs
+      g.fillStyle(0xffffff);
+      g.fillTriangle(cx-8*sc,y+20*sc,cx-4*sc,y+20*sc,cx-6*sc,y+33*sc);
+      g.fillTriangle(cx+4*sc,y+20*sc,cx+8*sc,y+20*sc,cx+6*sc,y+33*sc);
+    }
+
+    // ── S3: Crystal Golem ─────────────────────────────────────────────────
+    _crystalGolem(g,cx,cy,t,boss,sc){
+      const pulse=0.82+Math.sin(t*2.2)*0.18, y=cy+Math.sin(t*1.6)*5;
+      const gc=boss?0xff00ff:0x00ffcc;
+      // Outer glow
+      g.fillStyle(gc,0.12*pulse); g.fillEllipse(cx,y,165*sc,165*sc);
+      // Crystal spikes
+      g.fillStyle(boss?0xcc00ff:0x00ccff,0.82);
+      for(let i=0;i<(boss?10:8);i++){
+        const a=(i/(boss?10:8))*Math.PI*2+t*0.22;
+        const r=58*sc+Math.sin(t*3.5+i)*9*sc;
+        const px=cx+Math.cos(a)*r, py=y+Math.sin(a)*r;
+        g.fillTriangle(cx+Math.cos(a+0.14)*26*sc,y+Math.sin(a+0.14)*26*sc,cx+Math.cos(a-0.14)*26*sc,y+Math.sin(a-0.14)*26*sc,px,py);
+      }
+      // Body
+      g.fillStyle(boss?0x3d0060:0x0d2040); g.fillEllipse(cx,y,82*sc,92*sc);
+      // Face plate
+      g.fillStyle(boss?0x8800cc:0x004488,0.72); g.fillEllipse(cx,y-4*sc,62*sc,56*sc);
+      // Eyes grid
+      g.fillStyle(gc,pulse);
+      [[-14,-9],[-4,-14],[14,-9],[4,-14],[-10,5],[10,5]].forEach(([ex,ey2])=>{
+        g.fillCircle(cx+ex*sc,y+ey2*sc,4.5*sc*pulse);
+        g.fillStyle(0xffffff,0.5); g.fillCircle(cx+ex*sc-1,y+ey2*sc-1,1.5*sc);
+        g.fillStyle(gc,pulse);
+      });
+      // Inner glow
+      g.fillStyle(gc,0.35*pulse); g.fillCircle(cx,y,20*sc);
+      g.fillStyle(0xffffff,0.55*pulse); g.fillCircle(cx,y,5*sc);
+    }
+
+    // ── S4: Dungeon Wraith ────────────────────────────────────────────────
+    _wraith(g,cx,cy,t,boss,sc){
+      const float=Math.sin(t*1.9)*11, y=cy+float;
+      // Tail wisps
+      for(let i=0;i<6;i++){
+        const wave=Math.sin(t*2.2+i*0.9)*22*sc;
+        const my=y+62*sc+i*18*sc, alpha=(1-i/6)*0.38;
+        g.fillStyle(boss?0x8800aa:0x4400aa,alpha);
+        g.fillEllipse(cx+wave,my,(42-i*6)*sc,24*sc);
+      }
+      // Body robe
+      g.fillStyle(boss?0x200030:0x100020); g.fillEllipse(cx,y+12*sc,72*sc,92*sc);
+      // Hood
+      g.fillStyle(boss?0x300040:0x180030); g.fillEllipse(cx,y-24*sc,67*sc,67*sc);
+      g.fillStyle(0x000000,0.82); g.fillEllipse(cx,y-14*sc,46*sc,46*sc);
+      // Eyes
+      const eg=0.65+Math.sin(t*3.2)*0.35;
+      g.fillStyle(boss?0xff0044:0xaa00ff,eg);
+      g.fillEllipse(cx-13*sc,y-20*sc,17*sc,10*sc); g.fillEllipse(cx+13*sc,y-20*sc,17*sc,10*sc);
+      g.fillStyle(boss?0xff4488:0xcc44ff,eg*0.8);
+      g.fillEllipse(cx-13*sc,y-20*sc,8*sc,5*sc); g.fillEllipse(cx+13*sc,y-20*sc,8*sc,5*sc);
+      // Chains
+      g.lineStyle(2,0x404040);
+      for(let i=0;i<3;i++){
+        const ox=(i-1)*20*sc;
+        for(let j=0;j<4;j++){g.fillStyle(0x505050);g.fillRect(cx+ox-3,y+j*12*sc,6,8);}
+      }
+      if(boss){
+        g.fillStyle(0xddddcc); g.fillEllipse(cx,y-20*sc,33*sc,28*sc);
+        g.fillStyle(0x000000); g.fillEllipse(cx-8*sc,y-22*sc,9,9); g.fillEllipse(cx+8*sc,y-22*sc,9,9);
+        g.fillStyle(0xff0044,0.8); g.fillEllipse(cx-8*sc,y-22*sc,5,5); g.fillEllipse(cx+8*sc,y-22*sc,5,5);
+      }
+    }
+
+    // ── S5: Demon ─────────────────────────────────────────────────────────
+    _demon(g,cx,cy,t,boss,sc){
+      const wp=Math.sin(t*2.2)*16, y=cy+10;
+      // Fire aura
+      for(let i=0;i<10;i++){
+        const a=t*1.6+i*(Math.PI*2/10);
+        const r=58*sc+Math.sin(t*3.5+i)*11*sc;
+        const fx=cx+Math.cos(a)*r, fy=y+Math.sin(a)*r*0.52;
+        g.fillStyle(i%2?0xff4000:0xff8000,0.25+Math.sin(t*4+i)*0.18); g.fillCircle(fx,fy,9*sc);
+      }
+      // Wings
+      g.fillStyle(boss?0x400000:0x200010);
+      g.fillTriangle(cx-20*sc,y,cx-95*sc,y-wp-52,cx-52*sc,y+42*sc);
+      g.fillTriangle(cx-42*sc,y-10,cx-95*sc,y-wp-52,cx-72*sc,y-wp-18);
+      g.fillTriangle(cx+20*sc,y,cx+95*sc,y-wp-52,cx+52*sc,y+42*sc);
+      g.fillTriangle(cx+42*sc,y-10,cx+95*sc,y-wp-52,cx+72*sc,y-wp-18);
+      g.lineStyle(1,0x800000,0.45);
+      g.lineBetween(cx-20*sc,y,cx-95*sc,y-wp-52);
+      g.lineBetween(cx+20*sc,y,cx+95*sc,y-wp-52);
+      // Body
+      g.fillStyle(boss?0x800000:0xa02020); g.fillEllipse(cx,y+5*sc,62*sc,82*sc);
+      g.fillStyle(boss?0x600000:0x802020,0.45);
+      g.fillEllipse(cx-13*sc,y,22*sc,30*sc); g.fillEllipse(cx+13*sc,y,22*sc,30*sc);
+      // Head
+      g.fillStyle(boss?0x900000:0xb03030); g.fillEllipse(cx,y-46*sc,52*sc,52*sc);
+      // Horns
+      g.fillStyle(boss?0x300000:0x401010);
+      g.fillTriangle(cx-15*sc,y-56*sc,cx-26*sc,y-92*sc,cx-5*sc,y-58*sc);
+      g.fillTriangle(cx+15*sc,y-56*sc,cx+26*sc,y-92*sc,cx+5*sc,y-58*sc);
+      // Eyes
+      const eb=0.88+Math.sin(t*4.5)*0.12;
+      g.fillStyle(0xff8000,eb); g.fillEllipse(cx-13*sc,y-48*sc,15*sc,11*sc); g.fillEllipse(cx+13*sc,y-48*sc,15*sc,11*sc);
+      g.fillStyle(0xff2000); g.fillCircle(cx-13*sc,y-48*sc,4.5*sc); g.fillCircle(cx+13*sc,y-48*sc,4.5*sc);
+      g.fillStyle(0xffff00,0.8); g.fillCircle(cx-11*sc,y-50*sc,2*sc); g.fillCircle(cx+15*sc,y-50*sc,2*sc);
+      // Flame particles
+      for(let i=0;i<7;i++){
+        const fi=(t*3+i/7)%1;
+        const fy2=y+42*sc-fi*85*sc;
+        g.fillStyle(i%2?0xff6000:0xff3000,(1-fi)*0.65);
+        g.fillEllipse(cx+(Math.sin(t*3+i)*12),fy2,22*(1-fi)+5,28*(1-fi)+4);
+      }
+    }
+
+    // ── S6: Void Entity ───────────────────────────────────────────────────
+    _voidEntity(g,cx,cy,t,boss,sc){
+      const y=cy, n=boss?8:6;
+      // Outer glow
+      g.fillStyle(0x5000a0,0.12+Math.sin(t*2)*0.08); g.fillEllipse(cx,y,165*sc,165*sc);
+      // Tentacles
+      for(let i=0;i<n;i++){
+        const a=(i/n)*Math.PI*2+t*0.32;
+        const wave=Math.sin(t*2.2+i)*17;
+        const r=65*sc;
+        const sx=cx+Math.cos(a)*r, sy=y+Math.sin(a)*r;
+        const ex=cx+Math.cos(a+0.5)*(r+40*sc)+Math.cos(a+1.2)*wave;
+        const ey2=y+Math.sin(a+0.5)*(r+40*sc)+Math.sin(a+1.2)*wave;
+        g.lineStyle(boss?11*sc:8*sc,boss?0x8800ff:0x5500aa,0.82);
+        g.lineBetween(sx,sy,ex,ey2);
+        g.fillStyle(boss?0xcc00ff:0x8800cc); g.fillCircle(ex,ey2,7*sc);
+      }
+      // Core body
+      g.fillStyle(0x050010); g.fillCircle(cx,y,56*sc);
+      // Stars inside
+      for(let i=0;i<18;i++){
+        const a=(i/18)*Math.PI*2+t*0.12;
+        const r2=(((i*31.3)%40)+5)*sc;
+        g.fillStyle(0xffffff,(Math.sin(t*2+i)*0.4+0.6));
+        g.fillCircle(cx+Math.cos(a)*r2,y+Math.sin(a)*r2,1.5);
+      }
+      // Orbiting orbs
+      const norbs=boss?4:3;
+      for(let i=0;i<norbs;i++){
+        const a=t*1.6+i*(Math.PI*2/norbs);
+        const ox=cx+Math.cos(a)*72*sc, oy=y+Math.sin(a)*42*sc;
+        g.fillStyle(boss?0xff00ff:0x8800ff,0.72); g.fillCircle(ox,oy,9*sc);
+        g.fillStyle(0xffffff,0.45); g.fillCircle(ox-2,oy-2,3);
+      }
+      // Multiple eyes
+      [[-15,-10],[5,-18],[18,0],[-8,12],[15,15]].forEach(([ex,ey2])=>{
+        g.fillStyle(boss?0xff00ff:0x8800ff,0.75+Math.sin(t*3)*0.25);
+        g.fillCircle(cx+ex*sc,y+ey2*sc,5.5*sc);
+        g.fillStyle(0x000000); g.fillCircle(cx+ex*sc,y+ey2*sc,2*sc);
+      });
+    }
+
+    // ── S7: Singularity ───────────────────────────────────────────────────
+    _singularity(g,cx,cy,t,boss,sc){
+      const pulse=0.65+Math.sin(t*3.5)*0.35, y=cy;
+      // Reality cracks
+      g.lineStyle(1,0xffffff,0.08);
+      for(let i=0;i<10;i++){
+        const a=(i/10)*Math.PI*2+t*0.06;
+        g.lineBetween(cx,y,cx+Math.cos(a)*110*sc,y+Math.sin(a)*110*sc);
+      }
+      // Rotating rings
+      const rings=boss?[
+        {r:92*sc,sides:8,c:0x8080ff,spd:0.5},{r:74*sc,sides:6,c:0x4040ff,spd:-0.85},{r:56*sc,sides:4,c:0x0000ff,spd:1.25},
+      ]:[
+        {r:80*sc,sides:6,c:0x6060ff,spd:0.5},{r:60*sc,sides:4,c:0x4040ff,spd:-0.85},
+      ];
+      rings.forEach(({r,sides,c,spd})=>{
+        g.lineStyle(2,c,0.72); g.beginPath();
+        for(let i=0;i<=sides;i++){
+          const a=(i/sides)*Math.PI*2+t*spd;
+          const px=cx+Math.cos(a)*r, py=y+Math.sin(a)*r;
+          i===0?g.moveTo(px,py):g.lineTo(px,py);
+        }
+        g.closePath(); g.strokePath();
+      });
+      // Absorption particles
+      for(let i=0;i<12;i++){
+        const fi=(t*1.6+i/12)%1;
+        const a=(i/12)*Math.PI*2;
+        const r=82*sc*(1-fi);
+        g.fillStyle(0xffffff,(1-fi)*0.8); g.fillCircle(cx+Math.cos(a)*r,y+Math.sin(a)*r,3*(1-fi));
+      }
+      // Core
+      g.fillStyle(0x000000); g.fillCircle(cx,y,40*sc);
+      g.fillStyle(0x0000ff,0.28); g.fillCircle(cx,y,34*sc);
+      g.fillStyle(0x4040ff,0.5*pulse); g.fillCircle(cx,y,20*sc);
+      g.fillStyle(0xffffff,pulse); g.fillCircle(cx,y,boss?12*sc:8*sc);
+      g.fillStyle(0xffffff,1); g.fillCircle(cx,y,4*sc);
+      // Lens flare
+      g.fillStyle(0xffffff,0.22*pulse);
+      g.fillRect(cx-65*sc,y-1,130*sc,2); g.fillRect(cx-1,y-65*sc,2,130*sc);
+    }
+  }
+
+  // ── Launch Phaser games ──────────────────────────────────────────────────
+  window.addEventListener('load', function() {
+    const bgMount = document.getElementById('stage-bg');
+    if (bgMount) {
+      new Phaser.Game({
+        type: Phaser.CANVAS,
+        parent: 'stage-bg',
+        backgroundColor: '#000000',
+        scene: BgScene,
+        scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+      });
+    }
+    const monMount = document.getElementById('monster-panel');
+    if (monMount) {
+      new Phaser.Game({
+        type: Phaser.CANVAS,
+        width: 200, height: 210,
+        transparent: true,
+        parent: 'monster-panel',
+        scene: MonsterScene,
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      });
+    }
+  });
+})();
+
 document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
