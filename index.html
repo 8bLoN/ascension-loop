@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ascension Loop</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -764,9 +765,141 @@ body {
   #main { grid-template-columns: 1fr; }
   .panel { max-height: 200px; }
 }
+
+/* ===== GOTHIC FONT ===== */
+*, *::before, *::after {
+  font-family: 'Cinzel', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+}
+h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif !important; letter-spacing: 4px; }
+
+/* ===== STAGE BACKGROUND ===== */
+#stage-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  transition: background 2s ease;
+}
+#stage-bg svg { width: 100%; height: 100%; }
+#game-wrap { position: relative; z-index: 1; }
+
+/* ===== HERO PANEL (ENLARGED) ===== */
+#hero-panel {
+  width: 110px !important;
+  flex-shrink: 0 !important;
+}
+#battle-scene { gap: 10px !important; height: 210px !important; }
+
+/* ===== DAMAGE BADGE ===== */
+#dmg-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(60,10,10,0.85) 0%, rgba(30,5,5,0.9) 100%);
+  border: 1px solid rgba(180,30,30,0.6);
+  border-radius: 20px;
+  padding: 4px 10px 4px 8px;
+  box-shadow: 0 0 10px rgba(180,30,30,0.2), inset 0 1px 0 rgba(255,80,80,0.1);
+  cursor: default;
+}
+#dmg-coin-icon { font-size: 13px; animation: coinFlip 3.8s ease-in-out infinite; }
+#dmg-badge-val { font-size: 13px; font-weight: 700; color: #e05050; letter-spacing: 1px; }
+
+/* ===== ENEMY AREA GOTHIC STYLE ===== */
+#enemy-area {
+  position: relative;
+  padding: 6px 10px 8px;
+  background: linear-gradient(180deg, rgba(10,8,20,0.8) 0%, rgba(5,4,12,0.9) 100%);
+  border: 1px solid rgba(100,80,180,0.25);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+#enemy-area::before, #enemy-area::after {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(150,120,255,0.3);
+  font-size: 18px;
+}
+#enemy-area::before { left: 4px; }
+#enemy-area::after  { right: 4px; }
+
+#boss-label {
+  font-family: 'Cinzel Decorative', serif !important;
+  font-size: 11px !important;
+  letter-spacing: 3px !important;
+  color: #ff4444 !important;
+  text-shadow: 0 0 10px rgba(255,60,60,0.7) !important;
+}
+#enemy-name {
+  font-family: 'Cinzel Decorative', serif !important;
+  font-size: 14px !important;
+  letter-spacing: 2px !important;
+  text-shadow: 0 0 8px currentColor;
+  margin-bottom: 6px !important;
+}
+
+/* HP bar — gothic framed */
+#enemy-hp-wrap {
+  position: relative;
+  margin: 4px 0;
+}
+#enemy-hp-bar {
+  height: 10px !important;
+  border-radius: 2px !important;
+  background: rgba(20,15,40,0.8) !important;
+  border: 1px solid rgba(120,80,200,0.35) !important;
+  overflow: visible !important;
+  position: relative;
+}
+#enemy-hp-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #6020a0, #a040e0, #d060ff) !important;
+  box-shadow: 0 0 8px rgba(160,60,220,0.5);
+  transition: width 0.12s ease;
+}
+#enemy-hp-text {
+  font-size: 11px !important;
+  letter-spacing: 1px !important;
+  color: #b090e0 !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  text-shadow: 0 0 6px rgba(180,100,255,0.5) !important;
+  margin-top: 2px !important;
+}
+#wave-info {
+  font-size: 9px !important;
+  letter-spacing: 1.5px !important;
+  color: rgba(160,140,210,0.7) !important;
+}
+
+/* DPS row gothic */
+#dps-row {
+  font-size: 9px !important;
+  letter-spacing: 1px !important;
+  color: rgba(140,120,200,0.6) !important;
+  border-top: 1px solid rgba(80,60,140,0.2) !important;
+  padding-top: 4px !important;
+}
+
+/* Section titles */
+.sec-title {
+  font-family: 'Cinzel Decorative', serif !important;
+  letter-spacing: 2px !important;
+  font-size: 10px !important;
+}
+/* Stat labels */
+.stat-label { font-size: 9px !important; letter-spacing: 1px !important; }
+/* Upgrade buttons */
+.upg-btn { font-size: 10px !important; letter-spacing: 0.5px !important; }
+/* Notification */
+#notify { font-family: 'Cinzel', serif !important; letter-spacing: 1px !important; }
 </style>
 </head>
 <body>
+<div id="stage-bg"><svg id="stage-bg-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice"></svg></div>
 <div id="game-wrap">
   <!-- HEADER -->
   <div id="header">
@@ -783,7 +916,10 @@ body {
         <span id="gold-coin-icon">🪙</span>
         <span id="gold-badge-val">0</span>
       </div>
-      <div class="hstat">DMG: <span id="h-totdmg">0</span></div>
+      <div id="dmg-badge">
+        <span id="dmg-coin-icon">⚔</span>
+        <span id="dmg-badge-val">0</span>
+      </div>
       <div class="hstat" id="h-ess-wrap" style="display:none">✦ <span id="h-essence">0</span></div>
       <div class="hstat" id="h-dm-wrap" style="display:none">⬡ <span id="h-dm">0</span></div>
     </div>
@@ -812,8 +948,10 @@ body {
       <div id="enemy-area">
         <div id="boss-label">⚠ BOSS WAVE ⚠</div>
         <div id="enemy-name">Slime</div>
-        <div id="enemy-hp-bar"><div id="enemy-hp-fill" style="width:100%"></div></div>
-        <div id="enemy-hp-text">10 / 10</div>
+        <div id="enemy-hp-wrap">
+          <div id="enemy-hp-bar"><div id="enemy-hp-fill" style="width:100%"></div></div>
+          <div id="enemy-hp-text">10 / 10</div>
+        </div>
         <div id="wave-info">
           <div>Wave <span id="wave-num">1</span></div>
           <div>Gold: <span id="wave-gold">1</span></div>
@@ -1095,11 +1233,214 @@ const BOSS_NAMES = {
   7: ['Pre-Singularity','Universal Architect','Origin Beast','Alpha Omega','First and Last','Eternal Return']
 };
 
+
+// ===== STAGE BACKGROUNDS =====
+function getStageBG(stage) {
+  const W=800, H=500;
+  const defs = (content) => `<defs>${content}</defs>`;
+  const LG = (id,x1,y1,x2,y2,...stops) => {
+    let g=`<linearGradient id="${id}" x1="${x1}%" y1="${y1}%" x2="${x2}%" y2="${y2}%">`;
+    stops.forEach(([o,c])=>g+=`<stop offset="${o}" stop-color="${c}"/>`);
+    return g+'</linearGradient>';
+  };
+  const RG = (id,...stops) => {
+    let g=`<radialGradient id="${id}" cx="50%" cy="50%" r="60%">`;
+    stops.forEach(([o,c,op])=>g+=`<stop offset="${o}" stop-color="${c}" stop-opacity="${op??1}"/>`);
+    return g+'</radialGradient>';
+  };
+
+  if (stage===1) {
+    // Medieval Kingdom — rolling hills, castle, blue sky
+    let s=defs(LG('sky',0,0,0,100,'0%','#1a3a60','50%','#3a70a0','100%','#6aacb8')
+              +LG('gr',0,0,0,100,'0%','#2a5a18','100%','#1a3810'));
+    s+='<rect width="800" height="500" fill="url(#sky)"/>';
+    // clouds
+    s+='<ellipse cx="150" cy="80" rx="80" ry="22" fill="white" opacity=".12"/>';
+    s+='<ellipse cx="560" cy="60" rx="100" ry="26" fill="white" opacity=".1"/>';
+    s+='<ellipse cx="340" cy="95" rx="60" ry="18" fill="white" opacity=".08"/>';
+    // far hills (dark green)
+    s+='<path d="M0 280 Q100 230 200 260 Q300 290 400 240 Q500 200 600 250 Q700 280 800 240 L800 500 L0 500 Z" fill="#2a4820"/>';
+    // castle silhouette
+    s+='<rect x="340" y="180" width="120" height="120" fill="#182010"/>';
+    s+='<rect x="330" y="160" width="25" height="40" fill="#182010"/>';
+    s+='<rect x="365" y="150" width="25" height="50" fill="#182010"/>';
+    s+='<rect x="395" y="160" width="25" height="40" fill="#182010"/>';
+    s+='<rect x="455" y="165" width="22" height="38" fill="#182010"/>';
+    s+='<rect x="340" y="200" width="8" height="12" fill="#4a7828" opacity=".5"/>';// window lit
+    s+='<rect x="420" y="205" width="8" height="12" fill="#4a7828" opacity=".4"/>';
+    // near hills
+    s+='<path d="M0 340 Q150 290 300 330 Q450 370 600 320 Q700 290 800 310 L800 500 L0 500 Z" fill="#1e3818"/>';
+    s+='<path d="M0 400 Q200 360 400 390 Q600 420 800 380 L800 500 L0 500 Z" fill="#162e12"/>';
+    // ground mist
+    s+='<rect x="0" y="440" width="800" height="60" fill="#3a6028" opacity=".4"/>';
+    return s;
+  }
+  if (stage===2) {
+    // Dark Forest — night, dense pine silhouettes, torch glow
+    let s=defs(LG('nsky',0,0,0,100,'0%','#04081a','40%','#080e24','100%','#0e1430'));
+    s+='<rect width="800" height="500" fill="url(#nsky)"/>';
+    // stars
+    const sr=[[80,40],[200,25],[340,60],[470,30],[600,50],[720,35],[150,80],[420,70],[660,90],[280,110]];
+    sr.forEach(([x,y])=>s+=`<circle cx="${x}" cy="${y}" r="1.2" fill="white" opacity=".6"/>`);
+    s+='<circle cx="80" cy="55" rx="18" r="18" fill="#d8e8ff" opacity=".08"/>'; // moon
+    s+='<circle cx="80" cy="55" r="16" fill="#080e24"/>'; // moon shadow
+    s+='<circle cx="90" cy="52" r="16" fill="#d8e8ff" opacity=".08"/>'; // crescent
+    // torches in distance
+    [[250,260],[400,240],[580,255]].forEach(([x,y])=>{
+      s+=`<ellipse cx="${x}" cy="${y}" rx="20" ry="15" fill="#ff8820" opacity=".08" filter="url(#tf)"/>`;
+      s+=`<circle cx="${x}" cy="${y}" r="3" fill="#ffaa40" opacity=".5"/>`;
+    });
+    s+='<filter id="tf"><feGaussianBlur stdDeviation="6"/></filter>';
+    // tree rows (back to front)
+    const treeLine=(y,h,col,cnt)=>{
+      let t='';
+      for(let i=0;i<cnt;i++){const x=i*(800/cnt)+Math.sin(i*3.7)*15;t+=`<polygon points="${x},${y} ${x+h/2},${y+h} ${x-h/2},${y+h}" fill="${col}"/>`;}
+      return t;
+    };
+    s+=treeLine(140,140,'#08100c',12);
+    s+=treeLine(210,160,'#060e0a',10);
+    s+=treeLine(280,180,'#050c08',9);
+    s+=treeLine(350,200,'#040a06',8);
+    // ground mist
+    s+='<rect x="0" y="420" width="800" height="80" fill="#080f10" opacity=".7"/>';
+    s+='<ellipse cx="400" cy="460" rx="450" ry="40" fill="#0e2018" opacity=".5"/>';
+    return s;
+  }
+  if (stage===3) {
+    // Scorched Battlefield — red sky, smoke, ruins, fire
+    let s=defs(LG('bsky',0,0,0,100,'0%','#1a0800','35%','#480e04','70%','#6a1a08','100%','#2a0c04')
+              +LG('gnd',0,0,0,100,'0%','#1c1008','100%','#0c0804'));
+    s+='<rect width="800" height="500" fill="url(#bsky)"/>';
+    s+='<filter id="smk"><feGaussianBlur stdDeviation="18"/></filter>';
+    // smoke columns
+    [[180,300],[400,280],[620,310],[100,320],[700,290]].forEach(([x,y])=>{
+      s+=`<ellipse cx="${x}" cy="${y}" rx="45" ry="80" fill="#383028" opacity=".35" filter="url(#smk)"/>`;
+      s+=`<ellipse cx="${x}" cy="${y-60}" rx="35" ry="60" fill="#282020" opacity=".25" filter="url(#smk)"/>`;
+    });
+    // ruins
+    [[150,350,60,90],[280,370,40,70],[500,345,70,85],[640,355,50,75]].forEach(([x,y,w,h])=>{
+      s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#1a0c06"/>`;
+      s+=`<rect x="${x+5}" y="${y-15}" width="${w*.35}" height="18" fill="#1a0c06"/>`;
+      s+=`<rect x="${x+w*.6}" y="${y-10}" width="${w*.3}" height="13" fill="#1a0c06"/>`;
+    });
+    // fire
+    s+='<filter id="fi"><feGaussianBlur stdDeviation="4"/></filter>';
+    [[200,355],[390,340],[580,360]].forEach(([x,y])=>{
+      s+=`<ellipse cx="${x}" cy="${y}" rx="15" ry="25" fill="#ff6010" opacity=".5" filter="url(#fi)"/>`;
+      s+=`<ellipse cx="${x}" cy="${y+5}" rx="8" ry="15" fill="#ffb040" opacity=".6" filter="url(#fi)"/>`;
+    });
+    // ground
+    s+='<path d="M0 400 Q200 380 400 400 Q600 420 800 400 L800 500 L0 500 Z" fill="url(#gnd)"/>';
+    s+='<ellipse cx="400" cy="480" rx="420" ry="30" fill="#ff4010" opacity=".05" filter="url(#fi)"/>';
+    return s;
+  }
+  if (stage===4) {
+    // Galactic — deep space, nebulae, stars, planets
+    let s=defs(RG('neb1','0%','#2808a0','50%','#1404c0',.5,'100%','#080040',0)
+              +RG('neb2','0%','#a03080','50%','#602080',.4,'100%','#200820',0)
+              +LG('plt',0,0,100,0,'0%','#5070c0','100%','#203060'));
+    s+='<rect width="800" height="500" fill="#020008"/>';
+    // nebula patches
+    s+='<ellipse cx="200" cy="200" rx="200" ry="140" fill="url(#neb1)" opacity=".4"/>';
+    s+='<ellipse cx="600" cy="300" rx="180" ry="120" fill="url(#neb2)" opacity=".35"/>';
+    s+='<ellipse cx="700" cy="100" rx="120" ry="80" fill="url(#neb1)" opacity=".25"/>';
+    // stars
+    for(let i=0;i<80;i++){
+      const x=Math.abs(Math.sin(i*37.3)*800), y=Math.abs(Math.cos(i*53.7)*500);
+      const r=Math.abs(Math.sin(i*.7))*.8+.3, op=(.3+Math.abs(Math.cos(i*.9))*.5).toFixed(2);
+      s+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${r.toFixed(1)}" fill="white" opacity="${op}"/>`;
+    }
+    // planets
+    s+='<circle cx="650" cy="130" r="55" fill="url(#plt)"/>';
+    s+='<circle cx="650" cy="130" r="55" fill="none" stroke="#8090e0" stroke-width=".5" opacity=".4"/>';
+    s+='<ellipse cx="650" cy="135" rx="90" ry="14" fill="none" stroke="#a0a8e0" stroke-width="1" opacity=".3"/>';
+    s+='<circle cx="180" cy="380" r="30" fill="#408060" opacity=".6"/>';
+    s+='<circle cx="180" cy="380" r="30" fill="none" stroke="#60c080" stroke-width=".5" opacity=".3"/>';
+    return s;
+  }
+  if (stage===5) {
+    // Divine — golden clouds, light rays, heavenly
+    let s=defs(LG('hsky',0,0,0,100,'0%','#080820','30%','#201840','70%','#503810','100%','#806020')
+              +LG('ray',0,0,100,0,'0%','#fff8c0','100%','#fff8c0',0));
+    s+='<rect width="800" height="500" fill="url(#hsky)"/>';
+    s+='<filter id="rb"><feGaussianBlur stdDeviation="20"/></filter>';
+    // light rays from top
+    [[200,-20,40,500],[400,-20,60,500],[600,-20,40,500],[100,-20,25,400],[700,-20,25,400]].forEach(([x,y,w,h])=>{
+      s+=`<polygon points="${x-w/2},${y} ${x+w/2},${y} ${x+w*3},${y+h} ${x-w*3},${y+h}" fill="#ffd840" opacity=".06" filter="url(#rb)"/>`;
+    });
+    // golden clouds
+    [[200,180,120,40],[500,150,150,45],[700,200,100,35],[100,220,90,30],[380,250,110,38]].forEach(([x,y,rx,ry])=>{
+      s+=`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#c0900a" opacity=".18"/>`;
+      s+=`<ellipse cx="${x}" cy="${y-10}" rx="${rx*.7}" ry="${ry*.7}" fill="#e0b020" opacity=".15"/>`;
+    });
+    // temple pillars silhouette
+    [[100,420],[200,420],[580,420],[680,420]].forEach(([x,y])=>{
+      s+=`<rect x="${x}" y="${y-120}" width="18" height="120" fill="#4a3808" opacity=".5"/>`;
+      s+=`<rect x="${x-10}" y="${y-135}" width="38" height="18" fill="#4a3808" opacity=".5"/>`;
+      s+=`<rect x="${x-5}" y="${y}" width="28" height="12" fill="#4a3808" opacity=".5"/>`;
+    });
+    // god light center
+    s+='<ellipse cx="400" cy="0" rx="200" ry="300" fill="#ffd060" opacity=".04" filter="url(#rb)"/>';
+    return s;
+  }
+  if (stage===6) {
+    // Multiverse — reality tears, aurora, cosmic chaos
+    let s=defs(LG('mvsky',0,0,0,100,'0%','#020008','50%','#060418','100%','#0c0828'));
+    s+='<rect width="800" height="500" fill="url(#mvsky)"/>';
+    s+='<filter id="aur"><feGaussianBlur stdDeviation="12"/></filter>';
+    // aurora bands
+    [[0,'#4020e0',.15],[25,'#8020c0',.12],[45,'#2040c0',.1],[60,'#e02080',.08],[75,'#20c080',.07]].forEach(([y,col,op])=>{
+      s+=`<path d="M0 ${y*5} Q200 ${y*5-40} 400 ${y*5+20} Q600 ${y*5+50} 800 ${y*5-30} L800 ${y*5+60} Q600 ${y*5+80} 400 ${y*5+50} Q200 ${y*5+30} 0 ${y*5+60} Z" fill="${col}" opacity="${op}" filter="url(#aur)"/>`;
+    });
+    // reality tears (white cracks)
+    [[100,150,200,250],[350,80,420,180],[550,200,650,300],[200,350,300,430]].forEach(([x1,y1,x2,y2])=>{
+      const mx=(x1+x2)/2, my=(y1+y2)/2;
+      s+=`<path d="M${x1} ${y1} L${mx-20} ${my} L${x2} ${y2}" stroke="white" stroke-width=".8" fill="none" opacity=".4"/>`;
+      s+=`<path d="M${x1+5} ${y1+10} L${mx} ${my+15} L${x2-5} ${y2+10}" stroke="#a0c0ff" stroke-width=".4" fill="none" opacity=".25"/>`;
+    });
+    // floating geometric shards
+    [[300,200,'#4020a0'],[500,150,'#802080'],[150,300,'#204080'],[650,280,'#608040']].forEach(([x,y,col])=>{
+      s+=`<polygon points="${x},${y-25} ${x+20},${y+15} ${x-20},${y+15}" fill="${col}" opacity=".3"/>`;
+    });
+    return s;
+  }
+  if (stage===7) {
+    // Singularity — pure void, geometric horror, white fractures
+    let s='<rect width="800" height="500" fill="#000000"/>';
+    // grid (faint)
+    for(let i=0;i<=16;i++){
+      s+=`<line x1="${i*50}" y1="0" x2="${i*50}" y2="500" stroke="white" stroke-width=".3" opacity="${i%4===0?.12:.04}"/>`;
+    }
+    for(let i=0;i<=10;i++){
+      s+=`<line x1="0" y1="${i*50}" x2="800" y2="${i*50}" stroke="white" stroke-width=".3" opacity="${i%4===0?.12:.04}"/>`;
+    }
+    // singularity point
+    s+='<circle cx="400" cy="250" r="6" fill="white" opacity=".8"/>';
+    s+='<circle cx="400" cy="250" r="30" fill="none" stroke="white" stroke-width=".6" opacity=".4"/>';
+    s+='<circle cx="400" cy="250" r="80" fill="none" stroke="white" stroke-width=".4" opacity=".2"/>';
+    s+='<circle cx="400" cy="250" r="200" fill="none" stroke="white" stroke-width=".3" opacity=".1"/>';
+    // fracture lines from center
+    const angles=[0,45,90,135,180,225,270,315];
+    angles.forEach(a=>{
+      const rad=a*Math.PI/180, x2=400+Math.cos(rad)*500, y2=250+Math.sin(rad)*400;
+      s+=`<line x1="400" y1="250" x2="${x2.toFixed(0)}" y2="${y2.toFixed(0)}" stroke="white" stroke-width=".5" opacity=".2"/>`;
+    });
+    return s;
+  }
+  return '<rect width="800" height="500" fill="#020008"/>';
+}
+
+function updateStageBG() {
+  const el = document.getElementById('stage-bg-svg');
+  if (!el) return;
+  el.innerHTML = getStageBG(G.stage);
+}
+
 // ===== WAVE SYSTEM =====
 function getEnemyHP(wave, stage) {
   // Stage 1 base starts at 15 HP so first wave requires actual clicks.
   // Each wave +18%. Boss x10. Later stages scale exponentially in base.
-  const stageBase = stage === 1 ? 15 : Math.pow(10, (stage - 1) * 9);
+  const stageBase = stage === 1 ? 25 : Math.pow(10, (stage - 1) * 9);
   const waveScale = Math.pow(1.18, wave - 1);
   const isBoss = wave % 10 === 0;
   return stageBase * waveScale * (isBoss ? 10 : 1);
@@ -1107,7 +1448,7 @@ function getEnemyHP(wave, stage) {
 function getEnemyGold(wave, stage) {
   const isBoss = wave % 10 === 0;
   // Stage 1 gold boosted 15x to match the higher HP base (15 HP vs old 1 HP).
-  const earlyBoost = stage === 1 ? 15 : stage === 2 ? 4 : 1;
+  const earlyBoost = stage === 1 ? 25 : stage === 2 ? 5 : 1;
   const base = Math.pow(10, (stage - 1) * 8) * wave * earlyBoost;
   const bossBonus = isBoss ? 10 : 1;
   const planet_void = G.planets.void ? 3 : 1;
@@ -1245,6 +1586,7 @@ function getCritMult() {
 }
 
 function dealDamage(dmg) {
+  if (G.enemyHP <= 0) return; // already dying — prevent cascade kills each frame
   // Apply law of void (enemies take 3x)
   if (G.laws.void) dmg *= 3;
   G.enemyHP -= dmg;
@@ -1320,6 +1662,7 @@ function evolveStage() {
   rebuildUI();
   // Animate hero transformation
   triggerHeroEvolve();
+  updateStageBG();
   updateMonsterSVG();
   // Enable reset button at stage 7
   document.getElementById('reset-btn').disabled = G.stage < 7;
@@ -1465,6 +1808,8 @@ function updateHeader() {
   badge.style.borderColor = col;
 
   document.getElementById('gold-badge-val').textContent = fmt(G.gold);
+  const dmgEl = document.getElementById('dmg-badge-val');
+  if (dmgEl) dmgEl.textContent = fmtBig(G.totalDamage);
   document.getElementById('h-totdmg').textContent = fmtBig(G.totalDamage);
 
   // Essence / DM visibility
@@ -1994,11 +2339,11 @@ function getHeroSVG(stage) {
   const ar = (G.weapons && G.weapons.armor)  || 0;
   const ru = (G.weapons && G.weapons.rune)   || 0;
 
-  // Gear tiers
-  const wTier = ru>=1 ? 3 : sw>=4 ? 2 : sw>=1 ? 1 : 0;  // weapon
-  const bTier = ru>=1 ? 3 : ar>=2 ? 2 : ar>=1 ? 1 : 0;  // body armor
-  const hTier = ru>=1 ? 3 : ar>=3 ? 2 : sw>=2 ? 1 : 0;  // helmet
-  const lTier = ar>=2 ? 1 : 0;                            // leg armor
+  // Gear tiers — 0=none, 1=iron(gray), 2=darkened, 3=blackened, 4=runic(glows)
+  const wTier = ru>=1 ? 4 : sw>=5 ? 3 : sw>=3 ? 2 : sw>=1 ? 1 : 0;  // weapon
+  const bTier = ru>=1 ? 4 : ar>=4 ? 3 : ar>=2 ? 2 : ar>=1 ? 1 : 0;  // body
+  const hTier = ru>=1 ? 4 : ar>=4 ? 3 : ar>=2 ? 2 : sw>=2 ? 1 : 0;  // helmet
+  const lTier = ar>=3 ? 2 : ar>=1 ? 1 : 0;                            // legs
 
   // Stage accent color
   const hues = [0,205,280,28,175,50,290];
@@ -2014,52 +2359,59 @@ function getHeroSVG(stage) {
   s += '</defs>';
   s += '<rect width="70" height="130" fill="url(#halo)"/>';
 
-  // ── BOOTS / LEGS ──────────────────────────────────────────────────────────
-  const lc = lTier ? '#707e8c' : '#4e3218';
-  const ld = lTier ? '#3e4c58' : '#322010';
+  // ── BOOTS / LEGS — 3 tiers ────────────────────────────────────────────────
+  const legCols = [
+    ['#4e3218','#322010','#261608'],   // 0: cloth
+    ['#707e8c','#3e4c58','#303e4a'],   // 1: greaves
+    ['#303840','#1c2430','#141c24'],   // 2: dark plate
+  ];
+  const [lc,ld,bc] = legCols[lTier] || legCols[0];
   s += `<rect x="25" y="91" width="9" height="29" rx="2" fill="${lc}"/>`;
   s += `<rect x="36" y="91" width="9" height="29" rx="2" fill="${ld}"/>`;
-  if (lTier) {
+  if (lTier>=1) {
     s += `<rect x="25" y="101" width="9" height="3" rx="1" fill="${ld}"/>`;
-    s += `<rect x="36" y="101" width="9" height="3" rx="1" fill="#2e3c48"/>`;
+    s += `<rect x="36" y="101" width="9" height="3" rx="1" fill="${bc}"/>`;
   }
-  // Boots
-  const bc = lTier ? '#303e4a' : '#261608';
   s += `<rect x="23" y="117" width="13" height="7" rx="2.5" fill="${bc}"/>`;
   s += `<rect x="34" y="117" width="13" height="7" rx="2.5" fill="${bc}"/>`;
 
-  // ── BODY ARMOR ────────────────────────────────────────────────────────────
-  if (bTier===0) {
-    // Cloth tunic
-    s += '<rect x="21" y="60" width="28" height="33" rx="3" fill="#5a3c1e"/>';
-    s += '<rect x="27" y="62" width="16" height="29" fill="#6a4828"/>';
-  } else if (bTier===1) {
-    // Chainmail + small pauldrons
-    s += '<rect x="21" y="60" width="28" height="33" rx="3" fill="#5a6878"/>';
-    s += '<path d="M23 60 L47 60 L44 93 L26 93 Z" fill="#6a7888"/>';
-    s += '<line x1="35" y1="60" x2="35" y2="93" stroke="#485868" stroke-width="1.2"/>';
-    s += '<rect x="14" y="60" width="9" height="12" rx="3" fill="#5a6878"/>';
-    s += '<rect x="47" y="60" width="9" height="12" rx="3" fill="#5a6878"/>';
-  } else if (bTier===2) {
-    // Full plate
-    s += '<rect x="20" y="59" width="30" height="34" rx="3" fill="#8898a8"/>';
-    s += '<path d="M22 59 L48 59 L45 93 L25 93 Z" fill="#98aabb"/>';
-    s += '<line x1="35" y1="59" x2="35" y2="93" stroke="#687888" stroke-width="1.5"/>';
-    s += '<path d="M10 57 L21 57 L22 73 L11 73 Z" fill="#98aabb"/>';
-    s += '<path d="M49 57 L60 57 L59 73 L48 73 Z" fill="#98aabb"/>';
-    s += '<rect x="11" y="64" width="9" height="6" fill="#687888"/>';
-    s += '<rect x="50" y="64" width="9" height="6" fill="#687888"/>';
-  } else {
-    // Runic plate
-    s += `<rect x="20" y="59" width="30" height="34" rx="3" fill="${sd}"/>`;
-    s += `<path d="M22 59 L48 59 L45 93 L25 93 Z" fill="${sm}" opacity=".8"/>`;
-    s += `<line x1="35" y1="59" x2="35" y2="93" stroke="${sc}" stroke-width="1.2" opacity=".85"/>`;
-    s += `<path d="M28 73 Q35 69 42 73" stroke="${sc}" fill="none" stroke-width=".9" opacity=".7"/>`;
-    s += `<path d="M28 83 Q35 79 42 83" stroke="${sc}" fill="none" stroke-width=".9" opacity=".7"/>`;
-    s += `<path d="M10 56 L22 56 L22 73 L10 73 Z" fill="${sd}" stroke="${sc}" stroke-width=".7"/>`;
-    s += `<path d="M48 56 L60 56 L60 73 L48 73 Z" fill="${sd}" stroke="${sc}" stroke-width=".7"/>`;
-    s += `<circle cx="16" cy="64" r="3" fill="${sc}" opacity=".8"/>`;
-    s += `<circle cx="54" cy="64" r="3" fill="${sc}" opacity=".8"/>`;
+  // ── BODY ARMOR — 4 color tiers ────────────────────────────────────────────
+  // bc1=main, bc2=highlight, ps=pauldron, lv=line
+  const bodyPalette = [
+    ['#5a3c1e','#6a4828', null, null],           // 0: cloth (no pauldrons)
+    ['#788898','#8898a8', '#788898', '#586878'],  // 1: iron gray chainmail
+    ['#485868','#586878', '#485868', '#384858'],  // 2: dark steel plate
+    ['#202830','#28333e', '#202830', '#181e28'],  // 3: blackened armor
+    [sd,       sm,        sd,        sc],          // 4: runic
+  ];
+  {
+    const [bc1,bc2,ps,lv] = bodyPalette[bTier] || bodyPalette[0];
+    if (bTier===0) {
+      s += `<rect x="21" y="60" width="28" height="33" rx="3" fill="${bc1}"/>`;
+      s += `<rect x="27" y="62" width="16" height="29" fill="${bc2}"/>`;
+    } else {
+      s += `<rect x="20" y="59" width="30" height="34" rx="3" fill="${bc1}"/>`;
+      s += `<path d="M22 59 L48 59 L45 93 L25 93 Z" fill="${bc2}" opacity=".85"/>`;
+      const lc = lv || bc1;
+      s += `<line x1="35" y1="59" x2="35" y2="93" stroke="${lc}" stroke-width="1.3"/>`;
+      if (bTier>=2) {
+        // pauldrons
+        s += `<path d="M10 57 L21 57 L22 73 L11 73 Z" fill="${bc2}" stroke="${lc}" stroke-width=".6"/>`;
+        s += `<path d="M49 57 L60 57 L59 73 L48 73 Z" fill="${bc2}" stroke="${lc}" stroke-width=".6"/>`;
+        s += `<rect x="11" y="64" width="9" height="6" fill="${lc}"/>`;
+        s += `<rect x="50" y="64" width="9" height="6" fill="${lc}"/>`;
+      } else {
+        s += `<rect x="14" y="60" width="9" height="12" rx="3" fill="${ps||bc1}"/>`;
+        s += `<rect x="47" y="60" width="9" height="12" rx="3" fill="${ps||bc1}"/>`;
+      }
+      if (bTier===4) {
+        // runic runes on chest
+        s += `<path d="M28 73 Q35 69 42 73" stroke="${sc}" fill="none" stroke-width=".9" opacity=".75"/>`;
+        s += `<path d="M28 83 Q35 79 42 83" stroke="${sc}" fill="none" stroke-width=".9" opacity=".75"/>`;
+        s += `<circle cx="16" cy="64" r="3" fill="${sc}" opacity=".85"/>`;
+        s += `<circle cx="54" cy="64" r="3" fill="${sc}" opacity=".85"/>`;
+      }
+    }
   }
 
   // ── ARMS ──────────────────────────────────────────────────────────────────
@@ -2073,57 +2425,78 @@ function getHeroSVG(stage) {
   s += `<ellipse cx="17" cy="88" rx="4.5" ry="3.5" fill="${skin}"/>`;
   s += `<ellipse cx="53" cy="88" rx="4.5" ry="3.5" fill="${skin}"/>`;
 
-  // ── WEAPON (right side) ───────────────────────────────────────────────────
-  if (wTier===1) {
-    s += '<rect x="58" y="57" width="3.5" height="40" rx="1" fill="#909090"/>';
-    s += '<rect x="53" y="71" width="13" height="2.5" rx="1" fill="#6a7070"/>';
-    s += '<polygon points="59.75,51 58,59 61.5,59" fill="#b8b8b8"/>';
-  } else if (wTier===2) {
-    s += '<rect x="57" y="44" width="5" height="56" rx="1.5" fill="#a0a8b8"/>';
-    s += '<rect x="50" y="65" width="18" height="3.5" rx="1.5" fill="#687080"/>';
-    s += '<polygon points="59.5,38 57,48 62,48" fill="#c0c8d8"/>';
-    s += '<line x1="57" y1="44" x2="62" y2="100" stroke="#d0d8e8" stroke-width=".5"/>';
-  } else if (wTier===3) {
-    const wg = 'url(#wg)';
-    s += `<rect x="57" y="42" width="5" height="58" rx="2.5" fill="${sd}" stroke="${sc}" stroke-width=".8" filter="${wg}"/>`;
-    s += `<rect x="50" y="63" width="18" height="3.5" rx="1.5" fill="${sm}" stroke="${sc}" stroke-width=".7"/>`;
-    s += `<polygon points="59.5,35 57,46 62,46" fill="${sc}" filter="${wg}"/>`;
-    s += `<line x1="59.5" y1="50" x2="59.5" y2="93" stroke="${sc}" stroke-width=".8" opacity=".6"/>`;
-    s += `<path d="M56 63 L59.5 58 L63 63" stroke="${sc}" fill="none" stroke-width=".8"/>`;
-    s += `<path d="M56 76 L59.5 71 L63 76" stroke="${sc}" fill="none" stroke-width=".8"/>`;
+  // ── WEAPON — 4 color tiers ────────────────────────────────────────────────
+  // Palette: [blade, crossguard, tip]
+  const wPal = [
+    null,
+    ['#b0b0a8','#808078','#c8c8c0'],  // 1: iron gray
+    ['#686870','#484850','#909098'],  // 2: dark steel
+    ['#303038','#202028','#484850'],  // 3: blackened
+    [sd, sm, sc],                     // 4: runic
+  ];
+  if (wTier>=1) {
+    const [blade, guard, tip] = wPal[wTier];
+    if (wTier<=2) {
+      // Standard sword
+      s += `<rect x="57.5" y="55" width="4" height="42" rx="1.2" fill="${blade}"/>`;
+      s += `<rect x="52" y="70" width="15" height="3" rx="1" fill="${guard}"/>`;
+      s += `<polygon points="59.5,49 57.5,57 61.5,57" fill="${tip}"/>`;
+    } else if (wTier===3) {
+      // Blackened great sword
+      s += `<rect x="57" y="44" width="5" height="54" rx="1.5" fill="${blade}"/>`;
+      s += `<rect x="50" y="65" width="18" height="3.5" rx="1.5" fill="${guard}"/>`;
+      s += `<polygon points="59.5,37 57,47 62,47" fill="${tip}"/>`;
+      s += `<line x1="57" y1="44" x2="62" y2="98" stroke="${tip}" stroke-width=".4" opacity=".5"/>`;
+    } else {
+      // Runic weapon (glowing)
+      s += '<filter id="wg"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+      s += `<rect x="57" y="42" width="5" height="57" rx="2.5" fill="${blade}" stroke="${sc}" stroke-width=".8" filter="url(#wg)"/>`;
+      s += `<rect x="50" y="62" width="18" height="3.5" rx="1.5" fill="${guard}" stroke="${sc}" stroke-width=".7"/>`;
+      s += `<polygon points="59.5,34 57,46 62,46" fill="${sc}" filter="url(#wg)"/>`;
+      s += `<line x1="59.5" y1="50" x2="59.5" y2="93" stroke="${sc}" stroke-width=".8" opacity=".65"/>`;
+      s += `<path d="M56 62 L59.5 57 L63 62" stroke="${sc}" fill="none" stroke-width=".9"/>`;
+      s += `<path d="M56 76 L59.5 71 L63 76" stroke="${sc}" fill="none" stroke-width=".9"/>`;
+    }
   }
 
   // ── NECK + HEAD ───────────────────────────────────────────────────────────
   s += `<rect x="29" y="50" width="12" height="12" rx="3" fill="${skin}"/>`;
 
+  // ── HEAD / HELMET — 4 tiers ───────────────────────────────────────────────
   if (hTier===0) {
+    // Bare head
     s += `<ellipse cx="35" cy="35" rx="12" ry="14" fill="${skin}"/>`;
     s += `<path d="M23 29 Q27 16 35 15 Q43 16 47 29 Q43 20 35 19 Q27 20 23 29 Z" fill="#3a2010"/>`;
-    s += '<ellipse cx="30" cy="31" rx="2.5" ry="3" fill="white"/>';
-    s += '<ellipse cx="40" cy="31" rx="2.5" ry="3" fill="white"/>';
-    s += '<ellipse cx="30" cy="32" rx="1.5" ry="2" fill="#3060a0"/>';
-    s += '<ellipse cx="40" cy="32" rx="1.5" ry="2" fill="#3060a0"/>';
-    s += '<circle cx="30.6" cy="31" r=".7" fill="white"/>';
-    s += '<circle cx="40.6" cy="31" r=".7" fill="white"/>';
+    s += '<ellipse cx="30" cy="31" rx="2.5" ry="3" fill="white"/><ellipse cx="40" cy="31" rx="2.5" ry="3" fill="white"/>';
+    s += '<ellipse cx="30" cy="32" rx="1.5" ry="2" fill="#3060a0"/><ellipse cx="40" cy="32" rx="1.5" ry="2" fill="#3060a0"/>';
+    s += '<circle cx="30.6" cy="31" r=".7" fill="white"/><circle cx="40.6" cy="31" r=".7" fill="white"/>';
   } else if (hTier===1) {
+    // Iron open helm (gray)
     s += `<ellipse cx="35" cy="35" rx="12" ry="14" fill="${skin}"/>`;
     s += '<path d="M23 30 Q23 16 35 15 Q47 16 47 30 L45 30 Q45 19 35 19 Q25 19 25 30 Z" fill="#6a7888"/>';
     s += '<rect x="23" y="28" width="24" height="5" rx="1" fill="#5a6878"/>';
     s += '<rect x="33" y="28" width="4" height="10" rx="1" fill="#7a8898"/>';
-    s += '<ellipse cx="30" cy="34" rx="2.5" ry="2.5" fill="white"/>';
-    s += '<ellipse cx="40" cy="34" rx="2.5" ry="2.5" fill="white"/>';
-    s += '<ellipse cx="30" cy="34" rx="1.5" ry="1.5" fill="#3060a0"/>';
-    s += '<ellipse cx="40" cy="34" rx="1.5" ry="1.5" fill="#3060a0"/>';
+    s += '<ellipse cx="30" cy="34" rx="2.5" ry="2.5" fill="white"/><ellipse cx="40" cy="34" rx="2.5" ry="2.5" fill="white"/>';
+    s += '<ellipse cx="30" cy="34" rx="1.5" ry="1.5" fill="#3060a0"/><ellipse cx="40" cy="34" rx="1.5" ry="1.5" fill="#3060a0"/>';
   } else if (hTier===2) {
+    // Dark plate helm
     s += `<ellipse cx="35" cy="35" rx="14" ry="16" fill="${skin}"/>`;
-    s += '<path d="M21 27 Q21 13 35 12 Q49 13 49 27" fill="#9aaabb" stroke="#788898" stroke-width=".8"/>';
-    s += '<rect x="21" y="25" width="28" height="8" rx="1.5" fill="#8898a8"/>';
+    s += '<path d="M21 27 Q21 13 35 12 Q49 13 49 27" fill="#485868" stroke="#384858" stroke-width=".8"/>';
+    s += '<rect x="21" y="25" width="28" height="8" rx="1.5" fill="#404e5e"/>';
     s += '<rect x="22" y="27" width="26" height="3.5" rx="1" fill="#0a1018"/>';
-    s += '<rect x="26" y="27.5" width="8" height="2" rx=".8" fill="#4068c8" opacity=".9"/>';
-    s += '<rect x="36" y="27.5" width="8" height="2" rx=".8" fill="#4068c8" opacity=".9"/>';
-    s += '<path d="M29 12 Q35 2 41 12" stroke="#cc2020" fill="none" stroke-width="2.5"/>';
-    s += '<line x1="35" y1="5" x2="35" y2="1" stroke="#ee3030" stroke-width="2"/>';
+    s += '<rect x="26" y="27.5" width="8" height="2" rx=".8" fill="#3050a0" opacity=".8"/>';
+    s += '<rect x="36" y="27.5" width="8" height="2" rx=".8" fill="#3050a0" opacity=".8"/>';
+    s += '<path d="M29 12 Q35 3 41 12" stroke="#902020" fill="none" stroke-width="2"/>';
+  } else if (hTier===3) {
+    // Blackened great helm
+    s += `<ellipse cx="35" cy="35" rx="14" ry="16" fill="${skin}"/>`;
+    s += '<path d="M21 27 Q21 12 35 11 Q49 12 49 27" fill="#181e24" stroke="#242c36" stroke-width=".8"/>';
+    s += '<rect x="21" y="25" width="28" height="8" rx="1.5" fill="#1a2028"/>';
+    s += '<rect x="22" y="27" width="26" height="3.5" rx="1" fill="#05080c"/>';
+    s += '<rect x="26" y="27.5" width="8" height="2" rx=".8" fill="#203880" opacity=".7"/>';
+    s += '<rect x="36" y="27.5" width="8" height="2" rx=".8" fill="#203880" opacity=".7"/>';
   } else {
+    // Runic crown
     s += `<ellipse cx="35" cy="35" rx="14" ry="16" fill="${sd}" stroke="${sc}" stroke-width=".7"/>`;
     s += `<path d="M21 25 Q21 11 35 10 Q49 11 49 25" fill="${sm}" stroke="${sc}" stroke-width=".7"/>`;
     s += `<polygon points="27,11 23,1 31,11" fill="${sc}"/>`;
@@ -2916,7 +3289,7 @@ function triggerMonsterDeath(cb) {
     mon.classList.remove('monster-die');
     updateMonsterSVG();
     cb && cb();
-  }, 540);
+  }, 200);
 }
 
 // Hero stage-up flash
@@ -2976,6 +3349,7 @@ function init() {
   // Initialize battle scene characters
   updateHeroSVG();
   updateMonsterSVG();
+  updateStageBG();
 
   notify('Welcome to Ascension Loop! Click to begin your journey.');
 }
