@@ -32,12 +32,32 @@
 }
 html, body { height: 100%; }
 body {
-  background: var(--bg);
+  background-color: #040408;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 39px,
+      rgba(255,255,255,0.018) 39px, rgba(255,255,255,0.018) 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 79px,
+      rgba(255,255,255,0.014) 79px, rgba(255,255,255,0.014) 80px
+    );
   color: var(--text);
   font-family: 'Courier New', monospace;
   font-size: 13px;
   overflow-x: hidden;
   line-height: 1.4;
+}
+/* Dungeon vignette overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%);
 }
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 5px; }
@@ -53,7 +73,7 @@ body {
   overflow: hidden;
 }
 #header {
-  background: var(--bg2);
+  background: rgba(14,14,26,0.88);
   border-bottom: 1px solid var(--border);
   padding: 8px 16px;
   display: flex;
@@ -152,7 +172,7 @@ body {
   height: 100%;
 }
 .panel {
-  background: var(--bg2);
+  background: rgba(14,14,26,0.82);
   border-right: 1px solid var(--border);
   overflow-y: auto;
   padding: 10px;
@@ -170,7 +190,7 @@ body {
   padding: 16px;
   gap: 12px;
   overflow-y: auto;
-  background: var(--bg);
+  background: rgba(7,7,15,0.75);
 }
 
 /* ===== SECTION HEADERS ===== */
@@ -617,15 +637,15 @@ body {
 /* ===== BATTLE SCENE ===== */
 #battle-scene {
   width: 100%;
-  max-width: 400px;
+  max-width: 100%;
   display: flex;
-  gap: 6px;
-  height: 195px;
+  gap: 8px;
+  height: 280px;
   margin: 6px 0;
 }
-/* Hero panel — narrow, full body, gear upgrades visually */
+/* Hero panel — left, full body, gear upgrades visually */
 #hero-panel {
-  width: 76px;
+  width: 130px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -633,7 +653,7 @@ body {
   background: linear-gradient(180deg,rgba(18,18,38,0.9) 0%,rgba(6,6,16,0.98) 100%);
   border: 1px solid rgba(255,255,255,0.09);
   border-radius: 8px;
-  padding: 4px 2px 2px;
+  padding: 6px 4px 4px;
   position: relative;
   overflow: hidden;
 }
@@ -803,10 +823,12 @@ h1 { font-family: 'Cinzel Decorative', 'Cinzel', serif !important; letter-spacin
 
 /* ===== HERO PANEL (ENLARGED) ===== */
 #hero-panel {
-  width: 110px !important;
+  width: 130px !important;
   flex-shrink: 0 !important;
 }
-#battle-scene { gap: 10px !important; height: 210px !important; }
+#hero-name { font-size: 10px !important; letter-spacing: 1.5px !important; }
+#hero-gear-row { font-size: 12px !important; margin-bottom: 4px !important; }
+#battle-scene { gap: 8px !important; height: 280px !important; max-width: 100% !important; }
 
 /* ===== DAMAGE BADGE ===== */
 #dmg-badge {
@@ -1463,8 +1485,7 @@ function getEnemyHP(wave, stage) {
 }
 function getEnemyGold(wave, stage) {
   const isBoss = wave % 10 === 0;
-  // Stage 1 gold boosted 15x to match the higher HP base (15 HP vs old 1 HP).
-  const earlyBoost = stage === 1 ? 25 : stage === 2 ? 5 : 1;
+  const earlyBoost = stage === 1 ? 80 : stage === 2 ? 18 : 1;
   const base = Math.pow(10, (stage - 1) * 8) * wave * earlyBoost;
   const bossBonus = isBoss ? 10 : 1;
   const planet_void = G.planets.void ? 3 : 1;
@@ -1529,15 +1550,13 @@ function getClickDamage() {
 
 function getAutoDPS() {
   if (!G.weapons.autoAttack && !G.essenceUpgrades.autoStart) return 0;
-  let dps = 2; // base from auto-attack upgrade
+  let dps = 8; // base from auto-attack upgrade
 
-  // Sword/rune give auto a smaller bonus (not the full click formula).
-  // This keeps auto as a supplement — clicks are the main scaling tool.
-  dps += G.weapons.sword * 3;
-  dps *= (1 + G.weapons.rune * 0.6);
+  dps += G.weapons.sword * 12;
+  dps *= (1 + G.weapons.rune * 1.5);
 
   // Weapon armor bonus
-  dps *= (1 + G.weapons.armor * 0.12);
+  dps *= (1 + G.weapons.armor * 0.3);
 
   // Units (Stage 2)
   if (G.stage >= 2) {
@@ -1915,6 +1934,7 @@ function renderStage1Upgrades(area) {
         if (w.oneTime) { G.weapons[w.id] = true; } else { G.weapons[w.id]++; }
         w.effect();
         renderUpgradesPanel();
+        updateHeroSVG();
       };
     }
     area.appendChild(btn);
@@ -4106,7 +4126,7 @@ function init() {
     if (monMount) {
       new Phaser.Game({
         type: Phaser.CANVAS,
-        width: 200, height: 210,
+        width: 300, height: 280,
         transparent: true,
         parent: 'monster-panel',
         scene: MonsterScene,
