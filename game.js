@@ -123,17 +123,17 @@ const WEAPONS = [
 
 // ===== UNIT DEFINITIONS (Stage 2) =====
 const UNIT_DEFS = {
-  tank:     { name: 'Tank',     icon: '🛡', dps: 50,   baseCost: 200,   costMult: 1.15, desc: 'Tanky fighter, solid DPS' },
-  mage:     { name: 'Mage',     icon: '✨', dps: 200,  baseCost: 500,   costMult: 1.18, desc: 'Arcane blaster, high DPS' },
-  assassin: { name: 'Assassin', icon: '🗡', dps: 120,  baseCost: 350,   costMult: 1.16, desc: '+5% crit each, high burst' },
-  support:  { name: 'Support',  icon: '⚡', dps: 20,   baseCost: 150,   costMult: 1.12, desc: 'Multiplies all other unit DPS by 1.08x each' }
+  tank:     { name: 'Tank',     icon: '🛡', dps: 150,   baseCost: 200,   costMult: 1.15, desc: 'Tanky fighter. Every 5: +10% all unit damage' },
+  mage:     { name: 'Mage',     icon: '✨', dps: 400,  baseCost: 500,   costMult: 1.18, desc: 'Arcane blaster, high DPS. Every 3: +2 Crit %' },
+  assassin: { name: 'Assassin', icon: '🗡', dps: 300,  baseCost: 350,   costMult: 1.16, desc: '+5% crit each. Every 4: +30% damage' },
+  support:  { name: 'Support',  icon: '⚡', dps: 50,   baseCost: 150,   costMult: 1.12, desc: 'Multiplies all other unit DPS by 1.15x each' }
 };
 
 // ===== ARMY DEFINITIONS (Stage 3) =====
 const ARMY_DEFS = {
-  infantry: { name: 'Infantry', icon: '⚔', dps: 500,   baseCost: 1e6,  costMult: 1.12, desc: 'Steady DPS. Every 10: +5% all damage' },
-  cavalry:  { name: 'Cavalry',  icon: '🐴', dps: 2000,  baseCost: 5e6,  costMult: 1.14, desc: 'Fast DPS. Every 5: +8% attack speed' },
-  siege:    { name: 'Siege',    icon: '💣', dps: 8000,  baseCost: 2e7,  costMult: 1.18, desc: 'Massive DPS. Every 2: +15% crit multiplier' }
+  infantry: { name: 'Infantry', icon: '⚔', dps: 1500,   baseCost: 1e6,  costMult: 1.12, desc: 'Steady DPS. Every 10: +15% all army damage' },
+  cavalry:  { name: 'Cavalry',  icon: '🐴', dps: 5000,  baseCost: 5e6,  costMult: 1.14, desc: 'Fast DPS. Every 5: +20% attack speed' },
+  siege:    { name: 'Siege',    icon: '💣', dps: 15000,  baseCost: 2e7,  costMult: 1.18, desc: 'Massive DPS. Every 2: +30% crit multiplier' }
 };
 
 // ===== PLANET DEFINITIONS (Stage 4) =====
@@ -153,7 +153,16 @@ const LAW_DEFS = [
   { id: 'void',     name: 'Law of Void',     desc: 'Enemies take 3x damage',   goldCost: 1e32, dmCost: 1200 },
   { id: 'infinity', name: 'Law of Infinity', desc: 'Auto-DPS x1000',           goldCost: 1e33, dmCost: 2000 },
   { id: 'creation', name: 'Law of Creation', desc: 'Gold from waves x20',      goldCost: 1e34, dmCost: 3000 },
-  { id: 'entropy',  name: 'Law of Entropy',  desc: 'All multipliers stack x5', goldCost: 1e35, dmCost: 5000 }
+  { id: 'entropy',  name: 'Law of Entropy',  desc: 'All multipliers stack x5', goldCost: 1e35, dmCost: 5000 },
+  // Stage 3 Extended - More progression paths (VERY STRONG)
+  { id: 'harmony',  name: 'Law of Harmony',  desc: 'Units & weapons synergy: +300% combined damage', goldCost: 1e36, dmCost: 7000 },
+  { id: 'momentum', name: 'Law of Momentum', desc: 'Wave streaks give +5% damage (max +500%)', goldCost: 1e37, dmCost: 8500 },
+  { id: 'resonance',name: 'Law of Resonance',desc: 'Army DPS x500 (armies DOMINATE)', goldCost: 1e38, dmCost: 10000 },
+  { id: 'evolution', name: 'Law of Evolution', desc: 'Units level up: each tier grants +150% unit damage', goldCost: 1e39, dmCost: 12000 },
+  { id: 'dominion', name: 'Law of Dominion', desc: 'Total units affect all damage (+5% per 100 units)', goldCost: 1e40, dmCost: 15000 },
+  { id: 'ascension', name: 'Law of Ascension', desc: 'Each law unlocked: +200% total DPS', goldCost: 1e41, dmCost: 18000 },
+  { id: 'convergence', name: 'Law of Convergence', desc: 'All acquired laws amplify each other: x10x multiplier', goldCost: 1e42, dmCost: 22000 },
+  { id: 'transcendence', name: 'Law of Transcendence', desc: 'Ultimate power: All DPS sources x1000, Gold reward x500', goldCost: 1e43, dmCost: 30000 }
 ];
 
 // ===== ABSOLUTE DEFINITIONS (Stage 6) =====
@@ -493,31 +502,37 @@ function getAutoDPS() {
   if (!G.weapons.autoAttack && !G.essenceUpgrades.autoStart) return 0;
   let dps = 8; // base from auto-attack upgrade
 
-  dps += G.weapons.sword * 12;
-  dps *= (1 + G.weapons.rune * 1.5);
+  // Weapon scaling MUCH stronger
+  dps += G.weapons.sword * 25;  // increased from 12
+  dps *= (1 + G.weapons.rune * 3.0);  // increased from 1.5
 
-  // Weapon armor bonus
-  dps *= (1 + G.weapons.armor * 0.3);
+  // Weapon armor bonus MUCH stronger
+  dps *= (1 + G.weapons.armor * 1.0);  // increased from 0.3
 
-  // Units (Stage 2)
+  // Units (Stage 2) - MUCH STRONGER
   if (G.stage >= 2) {
-    const suppMult = Math.pow(1.08, G.units.support);
-    dps += (G.units.tank * UNIT_DEFS.tank.dps) * suppMult;
-    dps += (G.units.mage * UNIT_DEFS.mage.dps) * suppMult;
-    dps += (G.units.assassin * UNIT_DEFS.assassin.dps) * suppMult;
-    // Synergies
-    if (G.unitSynergies.shieldwall && G.units.tank >= 5) dps += G.units.tank * UNIT_DEFS.tank.dps;
-    if (G.unitSynergies.arcane && G.units.mage >= 5) dps += G.units.mage * UNIT_DEFS.mage.dps * 0.5;
+    const suppMult = Math.pow(1.15, G.units.support);  // increased from 1.08
+    const unitMultiplier = 1.5 + G.units.support * 0.5;  // Extra scaling with support
+    
+    dps += (G.units.tank * UNIT_DEFS.tank.dps * 3) * suppMult * unitMultiplier;  // x3 multiplier
+    dps += (G.units.mage * UNIT_DEFS.mage.dps * 3) * suppMult * unitMultiplier;
+    dps += (G.units.assassin * UNIT_DEFS.assassin.dps * 3) * suppMult * unitMultiplier;
+    dps *= (1 + G.units.support * 0.3);  // Support gives global bonus
+    
+    // Synergies - MUCH STRONGER
+    if (G.unitSynergies.shieldwall && G.units.tank >= 5) dps += G.units.tank * UNIT_DEFS.tank.dps * 5;
+    if (G.unitSynergies.arcane && G.units.mage >= 5) dps += G.units.mage * UNIT_DEFS.mage.dps * 3;
   }
 
-  // Armies (Stage 3)
+  // Armies (Stage 3) - MASSIVELY STRONGER
   if (G.stage >= 3) {
-    const infBonus = 1 + Math.floor(G.armies.infantry / 10) * 0.05;
-    dps += (G.armies.infantry * ARMY_DEFS.infantry.dps) * infBonus;
-    dps += (G.armies.cavalry * ARMY_DEFS.cavalry.dps);
-    dps += (G.armies.siege * ARMY_DEFS.siege.dps);
-    if (G.armyBonuses.formation) dps *= 1.5;
-    if (G.armyBonuses.charge) dps *= 1.3;
+    const infBonus = 1 + Math.floor(G.armies.infantry / 10) * 0.15;  // increased from 0.05
+    dps += (G.armies.infantry * ARMY_DEFS.infantry.dps * 4) * infBonus;  // x4 multiplier
+    dps += (G.armies.cavalry * ARMY_DEFS.cavalry.dps * 5);  // x5 multiplier
+    dps += (G.armies.siege * ARMY_DEFS.siege.dps * 6);  // x6 multiplier
+    dps *= (1 + (G.armies.infantry + G.armies.cavalry + G.armies.siege) * 0.05);  // scaling with total armies
+    if (G.armyBonuses.formation) dps *= 2.5;  // increased from 1.5
+    if (G.armyBonuses.charge) dps *= 2.0;  // increased from 1.3
     if (G.armyBonuses.bombardment) dps *= 1.4;
   }
 
@@ -1067,6 +1082,7 @@ function renderSquadCenter(area) {
         if (G.gold < cost) return;
         G.gold -= cost;
         G.units[btn.dataset.id] += qty;
+        updateHeroSVG();
         renderStageCenter();
       };
     });
@@ -1106,6 +1122,7 @@ function renderArmyCenter(area) {
         if (G.gold < cost) return;
         G.gold -= cost;
         G.armies[btn.dataset.id] += qty;
+        updateHeroSVG();
         renderStageCenter();
       };
     });
@@ -1562,6 +1579,103 @@ function getHeroSVG(stage) {
   return s;
 }
 
+// --- Army SVG visualization for Stage 2 ---
+function getArmySVG() {
+  // Render unit squad formation
+  const totalUnits = G.units.tank + G.units.mage + G.units.assassin + G.units.support;
+  const scale = 1 + Math.min(totalUnits, 100) * 0.003; // grows with unit count
+  
+  // Stage color
+  const hues = [0, 205, 280, 28, 175, 50, 290];
+  const hue  = hues[1]; // Stage 2 = index 1
+  const sc   = 'hsl(' + hue + ',70%,58%)';
+  const sm   = 'hsl(' + hue + ',50%,35%)';
+  
+  let s = '<defs>';
+  s += '<radialGradient id="armyGlow" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="' + sm + '" stop-opacity="0.3"/><stop offset="100%" stop-color="' + sc + '" stop-opacity="0"/></radialGradient>';
+  s += '<filter id="armyShine"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  s += '</defs>';
+  
+  // Background glow circle
+  s += '<circle cx="35" cy="65" r="' + (35 * scale) + '" fill="url(#armyGlow)"/>';
+  
+  // Tank (bottom-left) - Heavy armored unit
+  if (G.units.tank > 0) {
+    const tankScale = Math.min(1.2 + (G.units.tank * 0.003), 2);
+    const tankX = 20, tankY = 85;
+    s += '<g transform="translate(' + tankX + ',' + tankY + ') scale(' + tankScale + ')">';
+    s += '<rect x="-10" y="-12" width="20" height="24" rx="3" fill="#6a7888" stroke="#4a5868" stroke-width="0.8"/>';
+    s += '<rect x="-8" y="-10" width="16" height="8" fill="#8a9aa8" opacity="0.8"/>';
+    s += '<polygon points="-10,8 10,8 8,-8 -8,-8" fill="#7a8898"/>';
+    s += '<circle cx="-4" cy="2" r="2" fill="#c8a050" opacity="0.7"/>';
+    s += '<circle cx="4" cy="2" r="2" fill="#c8a050" opacity="0.7"/>';
+    s += '</g>';
+    // Tank count badge
+    if (G.units.tank > 1) {
+      s += '<text x="' + (tankX + 8) + '" y="' + (tankY + 18) + '" font-size="8" fill="' + sc + '" font-weight="bold" text-anchor="middle">' + G.units.tank + '</text>';
+    }
+  }
+  
+  // Mage (top-middle) - Magical damage
+  if (G.units.mage > 0) {
+    const mageScale = Math.min(1.1 + (G.units.mage * 0.002), 1.8);
+    const mageX = 35, mageY = 30;
+    s += '<g transform="translate(' + mageX + ',' + mageY + ') scale(' + mageScale + ')">';
+    s += '<polygon points="0,-14 -8,6 8,6" fill="#5a3aa8" stroke="#8a5aea" stroke-width="0.8"/>';
+    s += '<rect x="-6" y="2" width="12" height="14" rx="2" fill="#4a2a88"/>';
+    s += '<circle cx="0" cy="5" r="3" fill="#80eeff" opacity="0.8" filter="url(#armyShine)"/>';
+    s += '<path d="M-3 12 Q0 14 3 12" stroke="#80eeff" fill="none" stroke-width="1" opacity="0.6"/>';
+    s += '</g>';
+    // Mage count badge
+    if (G.units.mage > 1) {
+      s += '<text x="' + (mageX + 8) + '" y="' + (mageY - 20) + '" font-size="8" fill="' + sc + '" font-weight="bold" text-anchor="middle">' + G.units.mage + '</text>';
+    }
+  }
+  
+  // Assassin (bottom-right) - Fast striker
+  if (G.units.assassin > 0) {
+    const assScale = Math.min(1.15 + (G.units.assassin * 0.0025), 1.9);
+    const assX = 50, assY = 85;
+    s += '<g transform="translate(' + assX + ',' + assY + ') scale(' + assScale + ')">';
+    s += '<ellipse cx="0" cy="-8" rx="6" ry="8" fill="#3a2a18"/>';
+    s += '<rect x="-7" y="0" width="14" height="18" rx="2" fill="#2a1a0a"/>';
+    s += '<polygon points="-2,-8 2,-8 6,0 -6,0" fill="#1a0a00"/>';
+    s += '<line x1="8" y1="-4" x2="14" y2="-8" stroke="#e8a030" stroke-width="1.5" opacity="0.9"/>';
+    s += '<line x1="8" y1="4" x2="14" y2="8" stroke="#e8a030" stroke-width="1.5" opacity="0.9"/>';
+    s += '</g>';
+    // Assassin count badge
+    if (G.units.assassin > 1) {
+      s += '<text x="' + (assX + 8) + '" y="' + (assY + 18) + '" font-size="8" fill="' + sc + '" font-weight="bold" text-anchor="middle">' + G.units.assassin + '</text>';
+    }
+  }
+  
+  // Support (center) - Buff aura
+  if (G.units.support > 0) {
+    const supScale = Math.min(1 + (G.units.support * 0.005), 2.2);
+    const supX = 35, supY = 65;
+    s += '<g transform="translate(' + supX + ',' + supY + ') scale(' + supScale + ')">';
+    s += '<circle cx="0" cy="0" r="6" fill="#e8c830" opacity="0.7"/>';
+    s += '<circle cx="0" cy="0" r="8" fill="none" stroke="#f0d840" stroke-width="1" opacity="0.5"/>';
+    s += '<path d="M-4 -6 L4 -6 L0 4 Z" fill="#f8d840" opacity="0.8"/>';
+    s += '<path d="M0 -8 L0 -12 M-5 -4 L-8 -4 M5 -4 L8 -4" stroke="#f8d840" stroke-width="0.8" opacity="0.6"/>';
+    s += '</g>';
+    // Support count badge
+    if (G.units.support > 1) {
+      s += '<text x="' + (supX - 12) + '" y="' + (supY + 8) + '" font-size="8" fill="' + sc + '" font-weight="bold" text-anchor="middle">' + G.units.support + '</text>';
+    }
+  }
+  
+  // Unit count label at bottom
+  if (totalUnits > 0) {
+    s += '<text x="35" y="115" font-size="10" fill="' + sc + '" font-weight="bold" text-anchor="middle">Squad: ' + totalUnits + '</text>';
+    const avgDps = getAutoDPS();
+    s += '<text x="35" y="127" font-size="8" fill="' + sm + '" font-weight="bold" text-anchor="middle" opacity="0.9">DPS: ' + fmt(avgDps) + '</text>';
+  } else {
+    s += '<text x="35" y="70" font-size="11" fill="' + sc + '" font-weight="bold" text-anchor="middle" opacity="0.7">Buy Units to Build Squad</text>';
+  }
+  
+  return s;
+}
 
 // --- Monster SVG definitions per stage (close-up face portraits) ---
 function getMonsterSVG(stage, waveNum, isBoss) {
@@ -2273,7 +2387,12 @@ function getMonsterSVG(stage, waveNum, isBoss) {
 function updateHeroSVG() {
   const svg = document.getElementById('hero-svg');
   if (!svg) return;
-  svg.innerHTML = getHeroSVG(G.stage);
+  // Stage 2: Show army formation instead of hero
+  if (G.stage === 2) {
+    svg.innerHTML = getArmySVG();
+  } else {
+    svg.innerHTML = getHeroSVG(G.stage);
+  }
   const col = STAGE_COLORS[G.stage];
   const panel = document.getElementById('hero-panel');
   if (panel) panel.style.setProperty('--stage-col', col);
