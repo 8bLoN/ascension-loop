@@ -113,27 +113,27 @@ const STAGE_COLORS = [
 // ===== WEAPON UPGRADE DEFINITIONS =====
 const WEAPONS = [
   // sword and rune effects are no-ops: damage is computed from counts in getClickDamage()
-  { id: 'sword',  name: 'Iron Sword',      icon: '⚔',  desc: '+10 click dmg & +3 auto DPS (stacks)', baseCost: 5,    costMult: 1.45,  effect: () => {} },
-  { id: 'bow',    name: 'Hunter Bow',       icon: '🏹', desc: '+3% crit chance',   baseCost: 12,   costMult: 1.65,  effect: () => { G.critChance += 0.03; } },
-  { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 28,  costMult: 1.75, effect: () => { G.critMult += 0.5; } },
-  { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+12% auto DPS',     baseCost: 15,   costMult: 1.45,  effect: () => {} },
-  { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click dmg & +60% auto DPS (stacks)', baseCost: 80,   costMult: 2.0,   effect: () => {} },
-  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock passive auto-DPS (scales with swords & armor)', baseCost: 12, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
+  { id: 'sword',  name: 'Iron Sword',      icon: '⚔',  desc: '+10 click dmg & +3 auto DPS (stacks)', baseCost: 4,    costMult: 1.38,  effect: () => {} },
+  { id: 'bow',    name: 'Hunter Bow',       icon: '🏹', desc: '+3% crit chance',   baseCost: 8,    costMult: 1.50,  effect: () => { G.critChance += 0.03; } },
+  { id: 'staff',  name: 'Magic Staff',      icon: '🪄', desc: 'Crit multiplier +0.5x', baseCost: 16,  costMult: 1.60, effect: () => { G.critMult += 0.5; } },
+  { id: 'armor',  name: 'Battle Armor',     icon: '🛡', desc: '+12% auto DPS',     baseCost: 10,   costMult: 1.38,  effect: () => {} },
+  { id: 'rune',   name: 'Power Rune',       icon: '💎', desc: 'x2 click dmg & +60% auto DPS (stacks)', baseCost: 50,   costMult: 1.85,   effect: () => {} },
+  { id: 'autoAttack', name: 'Auto-Attack',  icon: '⚡', desc: 'Unlock passive auto-DPS (scales with swords & armor)', baseCost: 10, costMult: 1, oneTime: true, effect: () => { G.weapons.autoAttack = true; } }
 ];
 
 // ===== UNIT DEFINITIONS (Stage 2) =====
 const UNIT_DEFS = {
-  tank:     { name: 'Tank',     icon: '🛡', dps: 150,   baseCost: 200,   costMult: 1.15, desc: 'Tanky fighter. Every 5: +10% all unit damage' },
-  mage:     { name: 'Mage',     icon: '✨', dps: 400,  baseCost: 500,   costMult: 1.18, desc: 'Arcane blaster, high DPS. Every 3: +2 Crit %' },
-  assassin: { name: 'Assassin', icon: '🗡', dps: 300,  baseCost: 350,   costMult: 1.16, desc: '+5% crit each. Every 4: +30% damage' },
-  support:  { name: 'Support',  icon: '⚡', dps: 50,   baseCost: 150,   costMult: 1.12, desc: 'Multiplies all other unit DPS by 1.15x each' }
+  tank:     { name: 'Tank',     icon: '🛡', dps: 180,   baseCost: 1e8,   costMult: 1.12, desc: 'Tanky fighter. Every 5: +10% all unit damage' },
+  mage:     { name: 'Mage',     icon: '✨', dps: 480,  baseCost: 3e8,   costMult: 1.14, desc: 'Arcane blaster, high DPS. Every 3: +2 Crit %' },
+  assassin: { name: 'Assassin', icon: '🗡', dps: 360,  baseCost: 2e8,   costMult: 1.13, desc: '+5% crit each. Every 4: +30% damage' },
+  support:  { name: 'Support',  icon: '⚡', dps: 100,   baseCost: 8e7,   costMult: 1.10, desc: 'Multiplies all other unit DPS by 1.15x each' }
 };
 
 // ===== ARMY DEFINITIONS (Stage 3) =====
 const ARMY_DEFS = {
-  infantry: { name: 'Infantry', icon: '⚔', dps: 1500,   baseCost: 1e6,  costMult: 1.12, desc: 'Steady DPS. Every 10: +15% all army damage' },
-  cavalry:  { name: 'Cavalry',  icon: '🐴', dps: 5000,  baseCost: 5e6,  costMult: 1.14, desc: 'Fast DPS. Every 5: +20% attack speed' },
-  siege:    { name: 'Siege',    icon: '💣', dps: 15000,  baseCost: 2e7,  costMult: 1.18, desc: 'Massive DPS. Every 2: +30% crit multiplier' }
+  infantry: { name: 'Infantry', icon: '⚔', dps: 2000,   baseCost: 1e15,  costMult: 1.10, desc: 'Steady DPS. Every 10: +15% all army damage' },
+  cavalry:  { name: 'Cavalry',  icon: '🐴', dps: 6000,  baseCost: 6e15,  costMult: 1.11, desc: 'Fast DPS. Every 5: +20% attack speed' },
+  siege:    { name: 'Siege',    icon: '💣', dps: 20000,  baseCost: 2e16,  costMult: 1.12, desc: 'Massive DPS. Every 2: +30% crit multiplier' }
 };
 
 // ===== PLANET DEFINITIONS (Stage 4) =====
@@ -426,18 +426,22 @@ function updateStageBG() {
 
 // ===== WAVE SYSTEM =====
 function getEnemyHP(wave, stage) {
-  // Stage 1 base starts at 15 HP so first wave requires actual clicks.
-  // Each wave +18%. Boss x10. Later stages scale exponentially in base.
-  const stageBase = stage === 1 ? 25 : Math.pow(10, (stage - 1) * 9);
-  const waveScale = Math.pow(1.18, wave - 1);
+  // Stage 1 base starts at 20 HP so first wave requires actual clicks.
+  // Each wave +16%. Boss x10. Later stages scale exponentially in base.
+  // Adjusted lower than before to account for higher unit DPS
+  const stageBase = stage === 1 ? 20 : Math.pow(10, (stage - 1) * 8.8);
+  const waveScale = Math.pow(1.16, wave - 1);
   const isBoss = wave % 10 === 0;
   return stageBase * waveScale * (isBoss ? 10 : 1);
 }
 function getEnemyGold(wave, stage) {
   const isBoss = wave % 10 === 0;
-  const earlyBoost = stage === 1 ? 500 : stage === 2 ? 80 : 1;
-  const base = Math.pow(10, (stage - 1) * 8) * wave * earlyBoost;
-  const bossBonus = isBoss ? 10 : 1;
+  // Stage 1: baseline that makes reaching 1e9 achievable in ~30-45 min with balanced play
+  // Stage 2: jump to reach 1e18 in similar time with units
+  // Stage 3: further scale to reach 1e36 with armies
+  const earlyBoost = stage === 1 ? 1000 : stage === 2 ? 1e6 : 1;
+  const base = Math.pow(10, (stage - 1) * 8.5) * wave * earlyBoost;
+  const bossBonus = isBoss ? 12 : 1;  // 12x for bosses to encourage clearing
   const planet_void = G.planets.void ? 3 : 1;
   const mv_fracture = G.multiverse.fracture && isBoss ? 20 : 1;
   const law_creation = G.laws.creation ? 20 : 1;
@@ -500,40 +504,40 @@ function getClickDamage() {
 
 function getAutoDPS() {
   if (!G.weapons.autoAttack && !G.essenceUpgrades.autoStart) return 0;
-  let dps = 8; // base from auto-attack upgrade
+  let dps = 2; // reduced base from 8 - need more swords/armor for progression
 
-  // Weapon scaling MUCH stronger
-  dps += G.weapons.sword * 25;  // increased from 12
-  dps *= (1 + G.weapons.rune * 3.0);  // increased from 1.5
+  // Weapon scaling - Moderate early game
+  dps += G.weapons.sword * 20;  // reduced from 25
+  dps *= (1 + G.weapons.rune * 2.5);  // reduced from 3.0
 
-  // Weapon armor bonus MUCH stronger
-  dps *= (1 + G.weapons.armor * 1.0);  // increased from 0.3
+  // Weapon armor bonus - Reasonable scaling
+  dps *= (1 + G.weapons.armor * 0.8);  // reduced from 1.0
 
-  // Units (Stage 2) - MUCH STRONGER
+  // Units (Stage 2) - Balanced for new costs
   if (G.stage >= 2) {
-    const suppMult = Math.pow(1.15, G.units.support);  // increased from 1.08
-    const unitMultiplier = 1.5 + G.units.support * 0.5;  // Extra scaling with support
+    const suppMult = Math.pow(1.12, G.units.support);  // reduced from 1.15
+    const unitMultiplier = 1.3 + G.units.support * 0.3;  // reduced from 1.5 + 0.5  
     
-    dps += (G.units.tank * UNIT_DEFS.tank.dps * 3) * suppMult * unitMultiplier;  // x3 multiplier
-    dps += (G.units.mage * UNIT_DEFS.mage.dps * 3) * suppMult * unitMultiplier;
-    dps += (G.units.assassin * UNIT_DEFS.assassin.dps * 3) * suppMult * unitMultiplier;
-    dps *= (1 + G.units.support * 0.3);  // Support gives global bonus
+    dps += (G.units.tank * UNIT_DEFS.tank.dps * 2.5) * suppMult * unitMultiplier;  // reduced from 3x
+    dps += (G.units.mage * UNIT_DEFS.mage.dps * 2.5) * suppMult * unitMultiplier;
+    dps += (G.units.assassin * UNIT_DEFS.assassin.dps * 2.5) * suppMult * unitMultiplier;
+    dps *= (1 + G.units.support * 0.25);  // reduced from 0.3
     
-    // Synergies - MUCH STRONGER
-    if (G.unitSynergies.shieldwall && G.units.tank >= 5) dps += G.units.tank * UNIT_DEFS.tank.dps * 5;
-    if (G.unitSynergies.arcane && G.units.mage >= 5) dps += G.units.mage * UNIT_DEFS.mage.dps * 3;
+    // Synergies - Conditional bonuses
+    if (G.unitSynergies.shieldwall && G.units.tank >= 5) dps += G.units.tank * UNIT_DEFS.tank.dps * 4;  // reduced from 5
+    if (G.unitSynergies.arcane && G.units.mage >= 5) dps += G.units.mage * UNIT_DEFS.mage.dps * 2.5;  // reduced from 3
   }
 
-  // Armies (Stage 3) - MASSIVELY STRONGER
+  // Armies (Stage 3) - Balanced multipliers
   if (G.stage >= 3) {
-    const infBonus = 1 + Math.floor(G.armies.infantry / 10) * 0.15;  // increased from 0.05
-    dps += (G.armies.infantry * ARMY_DEFS.infantry.dps * 4) * infBonus;  // x4 multiplier
-    dps += (G.armies.cavalry * ARMY_DEFS.cavalry.dps * 5);  // x5 multiplier
-    dps += (G.armies.siege * ARMY_DEFS.siege.dps * 6);  // x6 multiplier
-    dps *= (1 + (G.armies.infantry + G.armies.cavalry + G.armies.siege) * 0.05);  // scaling with total armies
-    if (G.armyBonuses.formation) dps *= 2.5;  // increased from 1.5
-    if (G.armyBonuses.charge) dps *= 2.0;  // increased from 1.3
-    if (G.armyBonuses.bombardment) dps *= 1.4;
+    const infBonus = 1 + Math.floor(G.armies.infantry / 10) * 0.12;  // reduced from 0.15
+    dps += (G.armies.infantry * ARMY_DEFS.infantry.dps * 3.5) * infBonus;  // reduced from 4x
+    dps += (G.armies.cavalry * ARMY_DEFS.cavalry.dps * 4.5);  // reduced from 5x
+    dps += (G.armies.siege * ARMY_DEFS.siege.dps * 5);  // reduced from 6x
+    dps *= (1 + (G.armies.infantry + G.armies.cavalry + G.armies.siege) * 0.04);  // reduced from 0.05
+    if (G.armyBonuses.formation) dps *= 2.2;  // reduced from 2.5
+    if (G.armyBonuses.charge) dps *= 1.8;  // reduced from 2.0
+    if (G.armyBonuses.bombardment) dps *= 1.3;  // reduced from 1.4
   }
 
   // Planet bonuses (Stage 4)
